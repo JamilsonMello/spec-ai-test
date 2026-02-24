@@ -10,7 +10,7 @@ export class LoginUseCase {
     this.userRepository = userRepository;
   }
 
-  async execute(userDTO: UserDTO): Promise<string | null> {
+  async execute(userDTO: UserDTO): Promise<{ token: string; user: any } | null> {
     const user = await this.userRepository.getUserByEmail(userDTO.email);
 
     if (!user) {
@@ -25,6 +25,6 @@ export class LoginUseCase {
 
     const token = jwt.sign({ userId: user._id }, 'secret', { expiresIn: '1h' });
 
-    return token;
+    return { token, user };
   }
 }
