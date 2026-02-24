@@ -17,15 +17,21 @@ export const loginHandler = async (req: Request, res: Response) => {
   const userDTO: UserDTO = { email, password };
 
   try {
-    const token = await loginUseCase.execute(userDTO);
+    const { token, user } = await loginUseCase.execute(userDTO);
 
-    if (!token) {
+    if (!token || !user) {
       return res
         .status(401)
         .send({ message: 'email ou senha inválidos' });
     }
 
-    res.status(200).send({ token });
+    res.status(200).send({
+      token,
+      name: user.name,
+      email: user.email,
+      created_at: user.created_at,
+      updated_at: user.updated_at,
+    });
   } catch (error) {
     console.error(error);
     return res.status(500).send({ message: 'Internal server error' });
