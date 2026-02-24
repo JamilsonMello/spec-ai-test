@@ -1,3 +1,0 @@
-# Add Readme Title
-
-Please add a Markdown title `# Project Created by Spec-AI E2E` to the README.md file in the root of the project. Do not change anything else.
