@@ -8,10 +8,6 @@ const passwordRecoveryUseCase = new PasswordRecoveryUseCase(userRepository);
 export const passwordRecoveryHandler = async (req: Request, res: Response) => {
   const { email } = req.body;
 
-  // FR-001: Validate email format
-  if (!email || !/^\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/.test(email)) {
-    return res.status(400).send({ message: 'Invalid email format' });
-  }
 
   try {
     await passwordRecoveryUseCase.execute(email);
