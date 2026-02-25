@@ -24,4 +24,5 @@ type RegisterUserResponse struct {
 type UserRepository interface {
 	SaveUser(user *domain.User) error
 	GetUserByEmail(email string) (*domain.User, error)
+	ListUsers() ([]domain.User, error)
 }

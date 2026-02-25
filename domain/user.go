@@ -12,6 +12,10 @@ type User struct {
 	Surname     string    `json:"surname"`
 	Email       string    `json:"email"`
 	BirthDate   time.Time `json:"birthDate"`
+	Password    string    `json:"-"` // Omit from JSON output
+	RecoveryToken *string   `json:"-"` // Omit from JSON output, can be null
+	Role        string    `json:"role"`
+	CreatedAt   time.Time `json:"createdAt"`
 }
 
 var emailRegex = regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)

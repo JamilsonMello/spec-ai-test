@@ -50,3 +50,15 @@ func (r *InMemoryUserRepository) GetUserByEmail(email string) (*domain.User, err
 	}
 	return user, nil
 }
+
+// ListUsers retrieves all users from the in-memory store.
+func (r *InMemoryUserRepository) ListUsers() ([]domain.User, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	users := make([]domain.User, 0, len(r.users))
+	for _, user := range r.users {
+		users = append(users, *user)
+	}
+	return users, nil
+}
