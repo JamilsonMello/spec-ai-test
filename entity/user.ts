@@ -3,6 +3,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 export interface UserDocument extends Document {
   email: string;
   password?: string;
+  role: string;
 }
 
 const UserSchema: Schema = new Schema(
@@ -17,6 +18,11 @@ const UserSchema: Schema = new Schema(
     password: {
       type: String,
       required: true,
+    },
+    role: {
+      type: String,
+      default: 'user',
+    },
     passwordRecoveryToken: {
       type: String,
       default: null,

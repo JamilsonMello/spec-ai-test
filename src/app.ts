@@ -1,6 +1,7 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import { authRouter } from './routes/auth';
+import { userRouter } from './routes/user';
 
 const app = express();
 const port = 3000;
@@ -18,6 +19,7 @@ mongoose.connect('mongodb://localhost:27017/login-route', {
 });
 
 app.use('/api/auth', authRouter);
+app.use('/api/users', userRouter);
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
