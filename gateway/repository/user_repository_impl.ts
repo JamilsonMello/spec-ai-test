@@ -69,4 +69,28 @@ export class UserRepositoryImpl implements UserRepository {
       console.error('Error invalidating password recovery token:', error);
     }
   }
+
+  async listUsers(filters: { name?: string, email?: string }, pagination: { skip: number, limit: number }, sort: { [key: string]: 'asc' | 'desc' }): Promise<any[]> {
+    try {
+      const query: any = {};
+      if (filters.name) {
+        query.name = { $regex: filters.name, $options: 'i' }; // Case-insensitive partial match
+      }
+      if (filters.email) {
+        query.email = { $regex: filters.email, $options: 'i' }; // Case-insensitive partial match
+      }
+
+      const users = await User.find(query)
+        .sort(sort)
+        .skip(pagination.skip)
+        .limit(pagination.limit)
+        .select('-password -passwordRecoveryToken') // Exclude sensitive fields
+        .exec();
+
+      return users;
+    } catch (error) {
+      console.error('Error listing users:', error);
+      return [];
+    }
+  }
 }
