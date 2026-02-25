@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
 import { User } from '../../entity/user';
 
+
 const router = express.Router();
 
 router.get('/users', async (req: Request, res: Response) => {
