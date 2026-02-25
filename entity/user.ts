@@ -17,8 +17,10 @@ const UserSchema: Schema = new Schema(
     password: {
       type: String,
       required: true,
+    passwordRecoveryToken: {
+      type: String,
+      default: null,
     },
-  },
   {
     timestamps: true,
   }
