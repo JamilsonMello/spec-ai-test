@@ -6,5 +6,6 @@ const router = express.Router();
 
 router.post('/login', loginHandler);
 router.post('/reset-password', passwordResetHandler);
+router.post('/users', registerHandler);
 
 export { router as authRouter };
