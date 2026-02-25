@@ -2,6 +2,7 @@ package repository
 
 import (
 	"errors"
+	"sort"
 	"sync"
 
 	"github.com/example/cadastro-de-usuarios/domain"

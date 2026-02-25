@@ -21,7 +21,25 @@ type RegisterUserResponse struct {
 }
 
 // UserRepository provides an interface for user persistence operations.
+type ListUsersFilter struct {
+	Name    string
+	Email   string
+	Page    int
+	Limit   int
+	SortBy  string
+}
+
+type ListUsersResult struct {
+	Users []domain.User
+	Total int
+	Page  int
+	Limit int
+}
+
+// UserRepository provides an interface for user persistence operations.
 type UserRepository interface {
 	SaveUser(user *domain.User) error
 	GetUserByEmail(email string) (*domain.User, error)
+	ListUsers(filter ListUsersFilter) (*ListUsersResult, error)
 }
+
