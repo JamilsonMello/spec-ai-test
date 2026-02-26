@@ -22,13 +22,14 @@ func main() {
 	// Initialize use cases (Application layer)
 	registerUserUC := usecase.NewRegisterUserUseCase(userRepo)
 	listUsersUC := usecase.NewListUsersUseCase(userRepo)
+	deleteUserUC := usecase.NewDeleteUserUseCase(userRepo)
 	updateUserProfileUC := usecase.NewUpdateUserProfileUseCase(userRepo)
+  
 	requestPasswordRecoveryUC := usecase.NewRequestPasswordRecoveryUseCase(userRepo, passwordRecoveryRepo, emailService)
 	resetPasswordUC := usecase.NewResetPasswordUseCase(userRepo, passwordRecoveryRepo)
 	createPostUC := usecase.NewCreatePostUseCase(postRepo)
 
-	// Initialize handlers (Presentation layer)
-	userHandler := handler.NewUserHandler(registerUserUC, listUsersUC, updateUserProfileUC)
+	userHandler := handler.NewUserHandler(registerUserUC, listUsersUC, updateUserProfileUC, deleteUserUC)
 	passwordRecoveryHandler := handler.NewPasswordRecoveryHandler(requestPasswordRecoveryUC, resetPasswordUC)
 	postHandler := handler.NewPostHandler(createPostUC)
 
@@ -38,6 +39,7 @@ func main() {
 	// Register routes
 	e.POST("/usuarios", userHandler.RegisterUser)
 	e.GET("/usuarios/listar", userHandler.ListUsers)
+	e.DELETE("/usuarios/:id", userHandler.DeleteUser)
 	e.PUT("/usuarios/:id", userHandler.UpdateUserProfile)
 	e.POST("/password-recovery", passwordRecoveryHandler.RequestPasswordRecovery)
 	e.POST("/password-recovery/reset", passwordRecoveryHandler.ResetPassword)

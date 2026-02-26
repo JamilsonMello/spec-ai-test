@@ -119,3 +119,28 @@ func (r *InMemoryUserRepository) ListUsers(filter usecase.UserFilter, page int, 
 
 	return filteredUsers[offset:end], totalCount, nil
 }
+
+// DeleteUser removes a user from the in-memory store by ID.
+func (r *InMemoryUserRepository) DeleteUser(id string) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	// Find user by ID
+	var userEmail string
+	var found bool
+	for email, user := range r.users {
+		if user.ID == id {
+			userEmail = email
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		return ErrUserNotFound
+	}
+
+	// Delete user from map
+	delete(r.users, userEmail)
+	return nil
+}
