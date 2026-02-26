@@ -30,5 +30,7 @@ type UserFilter struct {
 type UserRepository interface {
 	SaveUser(user *domain.User) error
 	GetUserByEmail(email string) (*domain.User, error)
+	GetUserByID(id string) (*domain.User, error)
+	DeleteUser(id string) error
 	ListUsers(filter UserFilter, page int, limit int) ([]*domain.User, int, error)
 }
