@@ -13,15 +13,17 @@ import (
 
 // UserHandler handles HTTP requests related to users.
 type UserHandler struct {
-	RegisterUserUseCase *usecase.RegisterUserUseCase
-	ListUsersUseCase    *usecase.ListUsersUseCase
+	RegisterUserUseCase      *usecase.RegisterUserUseCase
+	ListUsersUseCase         *usecase.ListUsersUseCase
+	UpdateUserProfileUseCase *usecase.UpdateUserProfileUseCase
 }
 
 // NewUserHandler creates a new UserHandler.
-func NewUserHandler(registerUC *usecase.RegisterUserUseCase, listUC *usecase.ListUsersUseCase) *UserHandler {
+func NewUserHandler(registerUC *usecase.RegisterUserUseCase, listUC *usecase.ListUsersUseCase, updateProfileUC *usecase.UpdateUserProfileUseCase) *UserHandler {
 	return &UserHandler{
-		RegisterUserUseCase: registerUC,
-		ListUsersUseCase:    listUC,
+		RegisterUserUseCase:      registerUC,
+		ListUsersUseCase:         listUC,
+		UpdateUserProfileUseCase: updateProfileUC,
 	}
 }
 
@@ -95,6 +97,32 @@ func (h *UserHandler) ListUsers(c echo.Context) error {
 	// Execute use case
 	resp, err := h.ListUsersUseCase.Execute(req)
 	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Internal server error"})
+	}
+
+	return c.JSON(http.StatusOK, resp)
+}
+
+// UpdateUserProfile handles the PUT /usuarios/:id request.
+func (h *UserHandler) UpdateUserProfile(c echo.Context) error {
+	var req usecase.UpdateUserProfileRequest
+	if err := c.Bind(&req); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request payload"})
+	}
+
+	// Get user ID from path parameter
+	req.UserID = c.Param("id")
+
+	resp, err := h.UpdateUserProfileUseCase.Execute(req)
+	if err != nil {
+		if errors.Is(err, usecase.ErrInvalidNameUpdate) ||
+			errors.Is(err, usecase.ErrInvalidBirthDateUpdate) ||
+			errors.Is(err, usecase.ErrFutureBirthDateUpdate) {
+			return c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
+		}
+		if errors.Is(err, usecase.ErrUserNotFoundUpdate) {
+			return c.JSON(http.StatusNotFound, map[string]string{"error": err.Error()})
+		}
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Internal server error"})
 	}
 
