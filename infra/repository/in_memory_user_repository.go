@@ -2,10 +2,12 @@ package repository
 
 import (
 	"errors"
+	"sort"
+	"strings"
 	"sync"
 
 	"github.com/example/cadastro-de-usuarios/domain"
-	"github.com/example/cadastro-de-usuarios/application/usecase"
+	"github.com/example/cadastro-de-usuarios/usecase"
 )
 
 var ( // Define custom errors

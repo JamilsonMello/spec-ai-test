@@ -20,8 +20,23 @@ type RegisterUserResponse struct {
 	BirthDate   string    `json:"birthDate"`
 }
 
+// ListUsersRequest is the DTO for listing users input.
+type ListUsersRequest struct {
+	Name   string
+	Email  string
+	Limit  int
+	Offset int
+}
+
+// ListUsersResponse is the DTO for listing users output.
+type ListUsersResponse struct {
+	Users      []*domain.User `json:"users"`
+	TotalCount int            `json:"totalCount"`
+}
+
 // UserRepository provides an interface for user persistence operations.
 type UserRepository interface {
 	SaveUser(user *domain.User) error
 	GetUserByEmail(email string) (*domain.User, error)
+	ListUsers(request ListUsersRequest) (*ListUsersResponse, error)
 }
