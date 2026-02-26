@@ -7,7 +7,6 @@ import (
 	"sync"
 
 	"github.com/example/cadastro-de-usuarios/domain"
-	"github.com/example/cadastro-de-usuarios/application/usecase"
 )
 
 var ( // Define custom errors
@@ -80,7 +79,7 @@ func (r *InMemoryUserRepository) UpdateUser(user *domain.User) error {
 }
 
 // ListUsers retrieves a paginated list of users with optional filters.
-func (r *InMemoryUserRepository) ListUsers(filter usecase.UserFilter, page int, limit int) ([]*domain.User, int, error) {
+func (r *InMemoryUserRepository) ListUsers(filter domain.UserFilter, page int, limit int) ([]*domain.User, int, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 

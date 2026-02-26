@@ -22,11 +22,11 @@ var (
 
 // RegisterUserUseCase handles the business logic for user registration.
 type RegisterUserUseCase struct {
-	UserRepository UserRepository
+	UserRepository domain.UserRepository
 }
 
 // NewRegisterUserUseCase creates a new RegisterUserUseCase.
-func NewRegisterUserUseCase(repo UserRepository) *RegisterUserUseCase {
+func NewRegisterUserUseCase(repo domain.UserRepository) *RegisterUserUseCase {
 	return &RegisterUserUseCase{
 		UserRepository: repo,
 	}

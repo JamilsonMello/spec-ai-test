@@ -32,11 +32,11 @@ type UpdateUserProfileResponse struct {
 
 // UpdateUserProfileUseCase handles the business logic for updating user profile.
 type UpdateUserProfileUseCase struct {
-	UserRepository UserRepository
+	UserRepository domain.UserRepository
 }
 
 // NewUpdateUserProfileUseCase creates a new UpdateUserProfileUseCase.
-func NewUpdateUserProfileUseCase(repo UserRepository) *UpdateUserProfileUseCase {
+func NewUpdateUserProfileUseCase(repo domain.UserRepository) *UpdateUserProfileUseCase {
 	return &UpdateUserProfileUseCase{
 		UserRepository: repo,
 	}

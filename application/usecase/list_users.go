@@ -36,11 +36,11 @@ type ListUsersResponse struct {
 
 // ListUsersUseCase handles the business logic for listing users.
 type ListUsersUseCase struct {
-	UserRepository UserRepository
+	UserRepository domain.UserRepository
 }
 
 // NewListUsersUseCase creates a new ListUsersUseCase.
-func NewListUsersUseCase(repo UserRepository) *ListUsersUseCase {
+func NewListUsersUseCase(repo domain.UserRepository) *ListUsersUseCase {
 	return &ListUsersUseCase{
 		UserRepository: repo,
 	}
@@ -59,7 +59,7 @@ func (uc *ListUsersUseCase) Execute(req ListUsersRequest) (*ListUsersResponse, e
 	}
 
 	// Build filter criteria
-	filter := UserFilter{
+	filter := domain.UserFilter{
 		Name:  strings.ToLower(strings.TrimSpace(req.Name)),
 		Email: strings.ToLower(strings.TrimSpace(req.Email)),
 	}

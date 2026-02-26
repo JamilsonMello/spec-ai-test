@@ -28,12 +28,12 @@ type ResetPasswordResponse struct {
 
 // ResetPasswordUseCase handles the business logic for password reset.
 type ResetPasswordUseCase struct {
-	UserRepository            UserRepository
-	PasswordRecoveryRepository PasswordRecoveryRepository
+	UserRepository            domain.UserRepository
+	PasswordRecoveryRepository domain.PasswordRecoveryRepository
 }
 
 // NewResetPasswordUseCase creates a new ResetPasswordUseCase.
-func NewResetPasswordUseCase(userRepo UserRepository, recoveryRepo PasswordRecoveryRepository) *ResetPasswordUseCase {
+func NewResetPasswordUseCase(userRepo domain.UserRepository, recoveryRepo domain.PasswordRecoveryRepository) *ResetPasswordUseCase {
 	return &ResetPasswordUseCase{
 		UserRepository:            userRepo,
 		PasswordRecoveryRepository: recoveryRepo,

@@ -31,11 +31,11 @@ type CreatePostResponse struct {
 
 // CreatePostUseCase handles the business logic for post creation.
 type CreatePostUseCase struct {
-	PostRepository PostRepository
+	PostRepository domain.PostRepository
 }
 
 // NewCreatePostUseCase creates a new CreatePostUseCase.
-func NewCreatePostUseCase(repo PostRepository) *CreatePostUseCase {
+func NewCreatePostUseCase(repo domain.PostRepository) *CreatePostUseCase {
 	return &CreatePostUseCase{
 		PostRepository: repo,
 	}
