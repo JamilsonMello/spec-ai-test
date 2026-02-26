@@ -13,19 +13,19 @@ import (
 
 // UserHandler handles HTTP requests related to users.
 type UserHandler struct {
-	RegisterUserUseCase *usecase.RegisterUserUseCase
-	ListUsersUseCase    *usecase.ListUsersUseCase
-  updateProfileUC *usecase.UpdateUserProfileUseCase
-	DeleteUserUseCase   *usecase.DeleteUserUseCase
+	RegisterUserUseCase      *usecase.RegisterUserUseCase
+	ListUsersUseCase         *usecase.ListUsersUseCase
+	UpdateUserProfileUseCase *usecase.UpdateUserProfileUseCase
+	DeleteUserUseCase        *usecase.DeleteUserUseCase
 }
 
 // NewUserHandler creates a new UserHandler.
-func NewUserHandler(registerUC *usecase.RegisterUserUseCase, listUC *usecase.ListUsersUseCase, updateProfileUC *usecase.UpdateUserProfileUseCase, deleteUC DeleteUserUseCase) *UserHandler {
+func NewUserHandler(registerUC *usecase.RegisterUserUseCase, listUC *usecase.ListUsersUseCase, updateProfileUC *usecase.UpdateUserProfileUseCase, deleteUC *usecase.DeleteUserUseCase) *UserHandler {
 	return &UserHandler{
 		RegisterUserUseCase:      registerUC,
 		ListUsersUseCase:         listUC,
 		UpdateUserProfileUseCase: updateProfileUC,
-    DeleteUserUseCase:   deleteUC,
+		DeleteUserUseCase:        deleteUC,
 	}
 }
 
@@ -127,7 +127,11 @@ func (h *UserHandler) DeleteUser(c echo.Context) error {
 			return c.JSON(http.StatusNotFound, map[string]string{"error": err.Error()})
 		} else if errors.Is(err, usecase.ErrUnauthorizedRole) {
 			return c.JSON(http.StatusForbidden, map[string]string{"error": err.Error()})
-      
+		}
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Internal server error"})
+	}
+
+	return c.NoContent(http.StatusNoContent)
 }
 
 // UpdateUserProfile handles the PUT /usuarios/:id request.

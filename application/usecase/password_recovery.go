@@ -29,13 +29,13 @@ type RequestPasswordRecoveryResponse struct {
 
 // RequestPasswordRecoveryUseCase handles the business logic for password recovery requests.
 type RequestPasswordRecoveryUseCase struct {
-	UserRepository            UserRepository
-	PasswordRecoveryRepository PasswordRecoveryRepository
-	EmailService              EmailService
+	UserRepository            domain.UserRepository
+	PasswordRecoveryRepository domain.PasswordRecoveryRepository
+	EmailService              domain.EmailService
 }
 
 // NewRequestPasswordRecoveryUseCase creates a new RequestPasswordRecoveryUseCase.
-func NewRequestPasswordRecoveryUseCase(userRepo UserRepository, recoveryRepo PasswordRecoveryRepository, emailService EmailService) *RequestPasswordRecoveryUseCase {
+func NewRequestPasswordRecoveryUseCase(userRepo domain.UserRepository, recoveryRepo domain.PasswordRecoveryRepository, emailService domain.EmailService) *RequestPasswordRecoveryUseCase {
 	return &RequestPasswordRecoveryUseCase{
 		UserRepository:            userRepo,
 		PasswordRecoveryRepository: recoveryRepo,
