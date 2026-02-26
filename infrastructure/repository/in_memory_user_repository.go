@@ -53,6 +53,32 @@ func (r *InMemoryUserRepository) GetUserByEmail(email string) (*domain.User, err
 	return user, nil
 }
 
+// GetUserByID retrieves a user by their ID from the in-memory store.
+func (r *InMemoryUserRepository) GetUserByID(id string) (*domain.User, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	for _, user := range r.users {
+		if user.ID == id {
+			return user, nil
+		}
+	}
+	return nil, ErrUserNotFound
+}
+
+// UpdateUser updates an existing user in the in-memory store.
+func (r *InMemoryUserRepository) UpdateUser(user *domain.User) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	if _, exists := r.users[user.Email]; !exists {
+		return ErrUserNotFound
+	}
+
+	r.users[user.Email] = user
+	return nil
+}
+
 // ListUsers retrieves a paginated list of users with optional filters.
 func (r *InMemoryUserRepository) ListUsers(filter usecase.UserFilter, page int, limit int) ([]*domain.User, int, error) {
 	r.mu.RLock()

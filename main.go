@@ -2,8 +2,8 @@ package main
 
 import (
 	"log"
-	"net/http"
 
+	"github.com/labstack/echo/v4"
 	"github.com/example/cadastro-de-usuarios/presentation/handler"
 	"github.com/example/cadastro-de-usuarios/infrastructure/repository"
 	"github.com/example/cadastro-de-usuarios/infrastructure/service"
@@ -22,18 +22,23 @@ func main() {
 	registerUserUC := usecase.NewRegisterUserUseCase(userRepo)
 	listUsersUC := usecase.NewListUsersUseCase(userRepo)
 	requestPasswordRecoveryUC := usecase.NewRequestPasswordRecoveryUseCase(userRepo, passwordRecoveryRepo, emailService)
+	resetPasswordUC := usecase.NewResetPasswordUseCase(userRepo, passwordRecoveryRepo)
 
 	// Initialize handlers (Presentation layer)
 	userHandler := handler.NewUserHandler(registerUserUC, listUsersUC)
-	passwordRecoveryHandler := handler.NewPasswordRecoveryHandler(requestPasswordRecoveryUC)
+	passwordRecoveryHandler := handler.NewPasswordRecoveryHandler(requestPasswordRecoveryUC, resetPasswordUC)
 
-	// Set up routes
-	http.HandleFunc("/usuarios", userHandler.RegisterUser)
-	http.HandleFunc("/usuarios/listar", userHandler.ListUsers)
-	http.HandleFunc("/password-recovery", passwordRecoveryHandler.RequestPasswordRecovery)
+	// Set up Echo router
+	e := echo.New()
+
+	// Register routes
+	e.POST("/usuarios", userHandler.RegisterUser)
+	e.GET("/usuarios/listar", userHandler.ListUsers)
+	e.POST("/password-recovery", passwordRecoveryHandler.RequestPasswordRecovery)
+	e.POST("/password-recovery/reset", passwordRecoveryHandler.ResetPassword)
 
 	// Start the HTTP server
 	port := ":8080"
 	log.Printf("Server listening on port %s\n", port)
-	log.Fatal(http.ListenAndServe(port, nil))
+	log.Fatal(e.Start(port))
 }

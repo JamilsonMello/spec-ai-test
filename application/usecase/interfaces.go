@@ -6,6 +6,7 @@ import "github.com/example/cadastro-de-usuarios/domain"
 type PasswordRecoveryRepository interface {
 	SavePasswordRecovery(recovery *domain.PasswordRecovery) error
 	GetPasswordRecoveryByToken(token string) (*domain.PasswordRecovery, error)
+	UpdatePasswordRecovery(recovery *domain.PasswordRecovery) error
 }
 
 // EmailService provides an interface for sending emails.
