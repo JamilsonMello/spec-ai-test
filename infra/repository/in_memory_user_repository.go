@@ -2,6 +2,8 @@ package repository
 
 import (
 	"errors"
+	"sort"
+	"strings"
 	"sync"
 
 	"github.com/example/cadastro-de-usuarios/domain"
@@ -49,4 +51,45 @@ func (r *InMemoryUserRepository) GetUserByEmail(email string) (*domain.User, err
 		return nil, ErrUserNotFound
 	}
 	return user, nil
+}
+
+// ListUsers retrieves a paginated list of users with optional filters.
+func (r *InMemoryUserRepository) ListUsers(filter usecase.UserFilter, page int, limit int) ([]*domain.User, int, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	// Collect all users into a slice
+	var filteredUsers []*domain.User
+	for _, user := range r.users {
+		// Apply name filter (case-insensitive partial match)
+		if filter.Name != "" && !strings.Contains(strings.ToLower(user.Name), filter.Name) {
+			continue
+		}
+		// Apply email filter (case-insensitive partial match)
+		if filter.Email != "" && !strings.Contains(strings.ToLower(user.Email), filter.Email) {
+			continue
+		}
+		filteredUsers = append(filteredUsers, user)
+	}
+
+	// Sort by CreatedAt descending (most recent first)
+	sort.Slice(filteredUsers, func(i, j int) bool {
+		return filteredUsers[i].CreatedAt.After(filteredUsers[j].CreatedAt)
+	})
+
+	// Calculate total count before pagination
+	totalCount := len(filteredUsers)
+
+	// Apply pagination
+	offset := (page - 1) * limit
+	if offset >= totalCount {
+		return []*domain.User{}, totalCount, nil
+	}
+
+	end := offset + limit
+	if end > totalCount {
+		end = totalCount
+	}
+
+	return filteredUsers[offset:end], totalCount, nil
 }

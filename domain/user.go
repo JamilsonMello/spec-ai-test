@@ -7,11 +7,15 @@ import (
 
 // User represents a registered user in the system.
 type User struct {
-	ID          string    `json:"id"`
-	Name        string    `json:"name"`
-	Surname     string    `json:"surname"`
-	Email       string    `json:"email"`
-	BirthDate   time.Time `json:"birthDate"`
+	ID            string    `json:"id"`
+	Name          string    `json:"name"`
+	Surname       string    `json:"surname"`
+	Email         string    `json:"email"`
+	BirthDate     time.Time `json:"birthDate"`
+	Password      string    `json:"-"`           // Sensitive field, not exposed in JSON
+	RecoveryToken string    `json:"-"`           // Sensitive field, not exposed in JSON
+	Role          string    `json:"role"`        // User role (e.g., "admin", "user")
+	CreatedAt     time.Time `json:"createdAt"`   // Creation timestamp
 }
 
 var emailRegex = regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
