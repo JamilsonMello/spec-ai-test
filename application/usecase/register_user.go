@@ -45,6 +45,8 @@ func (uc *RegisterUserUseCase) Execute(req RegisterUserRequest) (*RegisterUserRe
 		Surname:   req.Surname,
 		Email:     req.Email,
 		BirthDate: birthDate,
+		Role:      "user", // Default role
+		CreatedAt: time.Now(),
 	}
 
 	// 2. Validate user fields using domain methods

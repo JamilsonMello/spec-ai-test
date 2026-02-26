@@ -3,6 +3,8 @@ package repository
 import (
 	"errors"
 	"sync"
+	"sort"
+	"strings"
 
 	"github.com/example/cadastro-de-usuarios/domain"
 	"github.com/example/cadastro-de-usuarios/application/usecase"
@@ -49,4 +51,42 @@ func (r *InMemoryUserRepository) GetUserByEmail(email string) (*domain.User, err
 		return nil, ErrUserNotFound
 	}
 	return user, nil
+}
+
+// FindAll retrieves all users, with optional filtering and pagination.
+func (r *InMemoryUserRepository) FindAll(params usecase.ListUsersParams) ([]*domain.User, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	var allUsers []*domain.User
+	for _, user := range r.users {
+		allUsers = append(allUsers, user)
+	}
+
+	// Sort by CreatedAt descending
+	sort.Slice(allUsers, func(i, j int) bool {
+		return allUsers[i].CreatedAt.After(allUsers[j].CreatedAt)
+	})
+
+	var filteredUsers []*domain.User
+	for _, user := range allUsers {
+		if (params.Name == "" || strings.Contains(strings.ToLower(user.Name), strings.ToLower(params.Name))) &&
+			(params.Email == "" || strings.Contains(strings.ToLower(user.Email), strings.ToLower(params.Email))) {
+			filteredUsers = append(filteredUsers, user)
+		}
+	}
+
+	// Paginate
+	start := (params.Page - 1) * params.Limit
+	end := start + params.Limit
+
+	if start > len(filteredUsers) {
+		return []*domain.User{}, nil
+	}
+
+	if end > len(filteredUsers) {
+		end = len(filteredUsers)
+	}
+
+	return filteredUsers[start:end], nil
 }
