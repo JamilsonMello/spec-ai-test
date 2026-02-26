@@ -20,8 +20,15 @@ type RegisterUserResponse struct {
 	BirthDate   string    `json:"birthDate"`
 }
 
+// UserFilter represents filter criteria for listing users.
+type UserFilter struct {
+	Name  string
+	Email string
+}
+
 // UserRepository provides an interface for user persistence operations.
 type UserRepository interface {
 	SaveUser(user *domain.User) error
 	GetUserByEmail(email string) (*domain.User, error)
+	ListUsers(filter UserFilter, page int, limit int) ([]*domain.User, int, error)
 }
