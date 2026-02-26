@@ -46,3 +46,8 @@ func (u *User) IsAdult() bool {
 func (u *User) IsPastDate() bool {
 	return u.BirthDate.Before(time.Now())
 }
+
+// IsValidPassword checks if the password meets minimum security requirements.
+func (u *User) IsValidPassword(password string) bool {
+	return len(password) >= 8
+}

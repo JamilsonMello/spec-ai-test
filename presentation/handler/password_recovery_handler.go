@@ -1,8 +1,10 @@
 package handler
 
 import (
-	"encoding/json"
+	"errors"
 	"net/http"
+
+	"github.com/labstack/echo/v4"
 
 	"github.com/example/cadastro-de-usuarios/application/usecase"
 )
@@ -10,35 +12,55 @@ import (
 // PasswordRecoveryHandler handles HTTP requests related to password recovery.
 type PasswordRecoveryHandler struct {
 	RequestPasswordRecoveryUseCase *usecase.RequestPasswordRecoveryUseCase
+	ResetPasswordUseCase           *usecase.ResetPasswordUseCase
 }
 
 // NewPasswordRecoveryHandler creates a new PasswordRecoveryHandler.
-func NewPasswordRecoveryHandler(recoveryUC *usecase.RequestPasswordRecoveryUseCase) *PasswordRecoveryHandler {
+func NewPasswordRecoveryHandler(recoveryUC *usecase.RequestPasswordRecoveryUseCase, resetUC *usecase.ResetPasswordUseCase) *PasswordRecoveryHandler {
 	return &PasswordRecoveryHandler{
 		RequestPasswordRecoveryUseCase: recoveryUC,
+		ResetPasswordUseCase:           resetUC,
 	}
 }
 
 // RequestPasswordRecovery handles the POST /password-recovery request.
-func (h *PasswordRecoveryHandler) RequestPasswordRecovery(w http.ResponseWriter, r *http.Request) {
+func (h *PasswordRecoveryHandler) RequestPasswordRecovery(c echo.Context) error {
 	var req usecase.RequestPasswordRecoveryRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
-		return
+	if err := c.Bind(&req); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request payload"})
 	}
 
 	resp, err := h.RequestPasswordRecoveryUseCase.Execute(req)
 	if err != nil {
 		if err == usecase.ErrUserNotFound {
 			// Return generic message to avoid email enumeration
-			http.Error(w, "Se o email existir em nossa base, você receberá instruções de recuperação", http.StatusOK)
-			return
+			return c.JSON(http.StatusOK, map[string]string{"message": "Se o email existir em nossa base, você receberá instruções de recuperação"})
 		}
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-		return
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Internal server error"})
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(resp)
+	return c.JSON(http.StatusOK, resp)
+}
+
+// ResetPassword handles the POST /password-recovery/reset request.
+func (h *PasswordRecoveryHandler) ResetPassword(c echo.Context) error {
+	var req usecase.ResetPasswordRequest
+	if err := c.Bind(&req); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request payload"})
+	}
+
+	resp, err := h.ResetPasswordUseCase.Execute(req)
+	if err != nil {
+		if errors.Is(err, usecase.ErrInvalidToken) {
+			return c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
+		} else if errors.Is(err, usecase.ErrPasswordMismatch) ||
+			errors.Is(err, usecase.ErrPasswordTooShort) {
+			return c.JSON(http.StatusUnprocessableEntity, map[string]string{"error": err.Error()})
+		} else if errors.Is(err, usecase.ErrUserNotFound) {
+			return c.JSON(http.StatusNotFound, map[string]string{"error": err.Error()})
+		}
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Internal server error"})
+	}
+
+	return c.JSON(http.StatusOK, resp)
 }

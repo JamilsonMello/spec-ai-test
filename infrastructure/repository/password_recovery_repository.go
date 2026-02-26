@@ -42,3 +42,12 @@ func (r *InMemoryPasswordRecoveryRepository) GetPasswordRecoveryByToken(token st
 	}
 	return recovery, nil
 }
+
+// UpdatePasswordRecovery updates an existing password recovery token in the in-memory store.
+func (r *InMemoryPasswordRecoveryRepository) UpdatePasswordRecovery(recovery *domain.PasswordRecovery) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	r.recovery[recovery.Token] = recovery
+	return nil
+}

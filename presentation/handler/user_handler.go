@@ -1,10 +1,11 @@
 package handler
 
 import (
-	"encoding/json"
 	"errors"
 	"net/http"
 	"strconv"
+
+	"github.com/labstack/echo/v4"
 
 	"github.com/example/cadastro-de-usuarios/infrastructure/repository"
 	"github.com/example/cadastro-de-usuarios/application/usecase"
@@ -25,11 +26,10 @@ func NewUserHandler(registerUC *usecase.RegisterUserUseCase, listUC *usecase.Lis
 }
 
 // RegisterUser handles the POST /usuarios request.
-func (h *UserHandler) RegisterUser(w http.ResponseWriter, r *http.Request) {
+func (h *UserHandler) RegisterUser(c echo.Context) error {
 	var req usecase.RegisterUserRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
-		return
+	if err := c.Bind(&req); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request payload"})
 	}
 
 	resp, err := h.RegisterUserUseCase.Execute(req)
@@ -40,49 +40,40 @@ func (h *UserHandler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 			errors.Is(err, usecase.ErrInvalidBirthDate) ||
 			errors.Is(err, usecase.ErrUserTooYoung) ||
 			errors.Is(err, usecase.ErrFutureBirthDate) {
-			http.Error(w, err.Error(), http.StatusUnprocessableEntity)
-			return
+			return c.JSON(http.StatusUnprocessableEntity, map[string]string{"error": err.Error()})
 		} else if errors.Is(err, repository.ErrEmailAlreadyExists) || errors.Is(err, usecase.ErrEmailInUse) {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
+			return c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
 		}
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-		return
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Internal server error"})
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(resp)
+	return c.JSON(http.StatusOK, resp)
 }
 
 // ListUsers handles the GET /usuarios/listar request.
 // This endpoint requires admin role for access.
-func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
+func (h *UserHandler) ListUsers(c echo.Context) error {
 	// Check for admin role (basic auth check via header or query param for demo)
 	// In production, this should use proper JWT/session validation
-	userRole := r.Header.Get("X-User-Role")
+	userRole := c.Request().Header.Get("X-User-Role")
 	if userRole == "" {
-		userRole = r.URL.Query().Get("role")
+		userRole = c.QueryParam("role")
 	}
 
 	// Only allow admin users to access this endpoint
 	if userRole != "admin" {
-		http.Error(w, "Access denied. Admin role required.", http.StatusForbidden)
-		return
+		return c.JSON(http.StatusForbidden, map[string]string{"error": "Access denied. Admin role required."})
 	}
 
 	// Parse query parameters
-	query := r.URL.Query()
-
-	// Build request DTO
 	req := usecase.ListUsersRequest{
-		Name:  query.Get("name"),
-		Email: query.Get("email"),
+		Name:  c.QueryParam("name"),
+		Email: c.QueryParam("email"),
 	}
 
 	// Parse page (default to 1)
 	page := 1
-	if pageStr := query.Get("page"); pageStr != "" {
+	if pageStr := c.QueryParam("page"); pageStr != "" {
 		if parsedPage, err := strconv.Atoi(pageStr); err == nil && parsedPage > 0 {
 			page = parsedPage
 		}
@@ -91,7 +82,7 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 
 	// Parse limit (default to 30, max 30)
 	limit := 30
-	if limitStr := query.Get("limit"); limitStr != "" {
+	if limitStr := c.QueryParam("limit"); limitStr != "" {
 		if parsedLimit, err := strconv.Atoi(limitStr); err == nil && parsedLimit > 0 {
 			limit = parsedLimit
 			if limit > 30 {
@@ -104,12 +95,8 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 	// Execute use case
 	resp, err := h.ListUsersUseCase.Execute(req)
 	if err != nil {
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-		return
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Internal server error"})
 	}
 
-	// Return response
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(resp)
+	return c.JSON(http.StatusOK, resp)
 }
