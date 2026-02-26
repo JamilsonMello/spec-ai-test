@@ -13,3 +13,8 @@ type PasswordRecoveryRepository interface {
 type EmailService interface {
 	SendPasswordRecoveryEmail(email string, token string) error
 }
+
+// PostRepository provides an interface for post persistence.
+type PostRepository interface {
+	SavePost(post *domain.Post) error
+}
