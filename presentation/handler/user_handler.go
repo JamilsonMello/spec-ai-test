@@ -15,13 +15,15 @@ import (
 type UserHandler struct {
 	RegisterUserUseCase *usecase.RegisterUserUseCase
 	ListUsersUseCase    *usecase.ListUsersUseCase
+	DeleteUserUseCase   *usecase.DeleteUserUseCase
 }
 
 // NewUserHandler creates a new UserHandler.
-func NewUserHandler(registerUC *usecase.RegisterUserUseCase, listUC *usecase.ListUsersUseCase) *UserHandler {
+func NewUserHandler(registerUC *usecase.RegisterUserUseCase, listUC *usecase.ListUsersUseCase, deleteUC *usecase.DeleteUserUseCase) *UserHandler {
 	return &UserHandler{
 		RegisterUserUseCase: registerUC,
 		ListUsersUseCase:    listUC,
+		DeleteUserUseCase:   deleteUC,
 	}
 }
 
@@ -99,4 +101,33 @@ func (h *UserHandler) ListUsers(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, resp)
+}
+
+// DeleteUser handles the DELETE /usuarios/:id request.
+// This endpoint requires admin role for access.
+func (h *UserHandler) DeleteUser(c echo.Context) error {
+	// Check for admin role (basic auth check via header or query param for demo)
+	// In production, this should use proper JWT/session validation
+	userRole := c.Request().Header.Get("X-User-Role")
+	if userRole == "" {
+		userRole = c.QueryParam("role")
+	}
+
+	// Get user ID from path parameter
+	userID := c.Param("id")
+
+	// Execute use case
+	err := h.DeleteUserUseCase.Execute(userID, userRole)
+	if err != nil {
+		if errors.Is(err, usecase.ErrInvalidUserID) {
+			return c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
+		} else if errors.Is(err, usecase.ErrUserNotFound) {
+			return c.JSON(http.StatusNotFound, map[string]string{"error": err.Error()})
+		} else if errors.Is(err, usecase.ErrUnauthorizedRole) {
+			return c.JSON(http.StatusForbidden, map[string]string{"error": err.Error()})
+		}
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Internal server error"})
+	}
+
+	return c.NoContent(http.StatusNoContent)
 }
