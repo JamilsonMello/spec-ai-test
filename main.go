@@ -14,6 +14,7 @@ func main() {
 	// Initialize repositories (Infrastructure layer)
 	userRepo := repository.NewInMemoryUserRepository()
 	passwordRecoveryRepo := repository.NewInMemoryPasswordRecoveryRepository()
+	postRepo := repository.NewInMemoryPostRepository()
 
 	// Initialize services (Infrastructure layer)
 	emailService := service.NewEmailService()
@@ -26,8 +27,11 @@ func main() {
   
 	requestPasswordRecoveryUC := usecase.NewRequestPasswordRecoveryUseCase(userRepo, passwordRecoveryRepo, emailService)
 	resetPasswordUC := usecase.NewResetPasswordUseCase(userRepo, passwordRecoveryRepo)
+	createPostUC := usecase.NewCreatePostUseCase(postRepo)
+
 	userHandler := handler.NewUserHandler(registerUserUC, listUsersUC, updateUserProfileUC, deleteUserUC)
 	passwordRecoveryHandler := handler.NewPasswordRecoveryHandler(requestPasswordRecoveryUC, resetPasswordUC)
+	postHandler := handler.NewPostHandler(createPostUC)
 
 	// Set up Echo router
 	e := echo.New()
@@ -39,6 +43,7 @@ func main() {
 	e.PUT("/usuarios/:id", userHandler.UpdateUserProfile)
 	e.POST("/password-recovery", passwordRecoveryHandler.RequestPasswordRecovery)
 	e.POST("/password-recovery/reset", passwordRecoveryHandler.ResetPassword)
+	e.POST("/posts", postHandler.CreatePost)
 
 	// Start the HTTP server
 	port := ":8080"
