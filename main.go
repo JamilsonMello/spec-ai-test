@@ -13,10 +13,12 @@ func main() {
 	// Initialize dependencies
 	userRepo := repository.NewInMemoryUserRepository()
 	registerUserUC := usecase.NewRegisterUserUseCase(userRepo)
-	userHandler := handler.NewUserHandler(registerUserUC)
+	listUsersUC := usecase.NewListUsersUseCase(userRepo)
+	userHandler := handler.NewUserHandler(registerUserUC, listUsersUC)
 
 	// Set up routes
 	http.HandleFunc("/usuarios", userHandler.RegisterUser)
+	http.HandleFunc("/usuarios/listar", userHandler.ListUsers)
 
 	// Start the HTTP server
 	port := ":8080"
