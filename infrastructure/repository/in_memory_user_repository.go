@@ -1,17 +1,11 @@
 package repository
 
 import (
-	"errors"
 	"sort"
 	"strings"
 	"sync"
 
 	"github.com/example/cadastro-de-usuarios/domain"
-)
-
-var ( // Define custom errors
-	ErrUserNotFound    = errors.New("user not found")
-	ErrEmailAlreadyExists = errors.New("email already exists")
 )
 
 // InMemoryUserRepository implements UserRepository interface for in-memory storage.
@@ -33,7 +27,7 @@ func (r *InMemoryUserRepository) SaveUser(user *domain.User) error {
 	defer r.mu.Unlock()
 
 	if _, exists := r.users[user.Email]; exists {
-		return ErrEmailAlreadyExists
+		return domain.ErrEmailAlreadyExists
 	}
 
 	r.users[user.Email] = user
@@ -47,7 +41,7 @@ func (r *InMemoryUserRepository) GetUserByEmail(email string) (*domain.User, err
 
 	user, exists := r.users[email]
 	if !exists {
-		return nil, ErrUserNotFound
+		return nil, domain.ErrUserNotFound
 	}
 	return user, nil
 }

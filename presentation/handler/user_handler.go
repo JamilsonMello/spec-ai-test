@@ -7,8 +7,8 @@ import (
 
 	"github.com/labstack/echo/v4"
 
-	"github.com/example/cadastro-de-usuarios/infrastructure/repository"
 	"github.com/example/cadastro-de-usuarios/application/usecase"
+	"github.com/example/cadastro-de-usuarios/domain"
 )
 
 // UserHandler handles HTTP requests related to users.
@@ -45,7 +45,7 @@ func (h *UserHandler) RegisterUser(c echo.Context) error {
 			errors.Is(err, usecase.ErrUserTooYoung) ||
 			errors.Is(err, usecase.ErrFutureBirthDate) {
 			return c.JSON(http.StatusUnprocessableEntity, map[string]string{"error": err.Error()})
-		} else if errors.Is(err, repository.ErrEmailAlreadyExists) || errors.Is(err, usecase.ErrEmailInUse) {
+		} else if errors.Is(err, domain.ErrEmailAlreadyExists) || errors.Is(err, usecase.ErrEmailInUse) {
 			return c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
 		}
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Internal server error"})
