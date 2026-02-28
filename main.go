@@ -5,6 +5,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/example/cadastro-de-usuarios/presentation/handler"
+	"github.com/example/cadastro-de-usuarios/presentation/middleware"
 	"github.com/example/cadastro-de-usuarios/infrastructure/repository"
 	"github.com/example/cadastro-de-usuarios/infrastructure/service"
 	"github.com/example/cadastro-de-usuarios/application/usecase"
@@ -18,16 +19,18 @@ func main() {
 
 	// Initialize services (Infrastructure layer)
 	emailService := service.NewEmailService()
+	jwtValidatorService := service.NewJWTValidatorService()
 
 	// Initialize use cases (Application layer)
 	registerUserUC := usecase.NewRegisterUserUseCase(userRepo)
 	listUsersUC := usecase.NewListUsersUseCase(userRepo)
 	deleteUserUC := usecase.NewDeleteUserUseCase(userRepo)
 	updateUserProfileUC := usecase.NewUpdateUserProfileUseCase(userRepo)
-  
+
 	requestPasswordRecoveryUC := usecase.NewRequestPasswordRecoveryUseCase(userRepo, passwordRecoveryRepo, emailService)
 	resetPasswordUC := usecase.NewResetPasswordUseCase(userRepo, passwordRecoveryRepo)
 	createPostUC := usecase.NewCreatePostUseCase(postRepo)
+	validateTokenUC := usecase.NewValidateTokenUseCase(jwtValidatorService)
 
 	userHandler := handler.NewUserHandler(registerUserUC, listUsersUC, updateUserProfileUC, deleteUserUC)
 	passwordRecoveryHandler := handler.NewPasswordRecoveryHandler(requestPasswordRecoveryUC, resetPasswordUC)
@@ -36,14 +39,19 @@ func main() {
 	// Set up Echo router
 	e := echo.New()
 
-	// Register routes
+	// Register public routes
 	e.POST("/usuarios", userHandler.RegisterUser)
-	e.GET("/usuarios/listar", userHandler.ListUsers)
-	e.DELETE("/usuarios/:id", userHandler.DeleteUser)
-	e.PUT("/usuarios/:id", userHandler.UpdateUserProfile)
 	e.POST("/password-recovery", passwordRecoveryHandler.RequestPasswordRecovery)
 	e.POST("/password-recovery/reset", passwordRecoveryHandler.ResetPassword)
-	e.POST("/posts", postHandler.CreatePost)
+
+	// Register protected routes
+	protected := e.Group("")
+	protected.Use(middleware.AuthMiddleware(validateTokenUC))
+
+	protected.GET("/usuarios/listar", userHandler.ListUsers)
+	protected.DELETE("/usuarios/:id", userHandler.DeleteUser)
+	protected.PUT("/usuarios/:id", userHandler.UpdateUserProfile)
+	protected.POST("/posts", postHandler.CreatePost)
 
 	// Start the HTTP server
 	port := ":8080"
