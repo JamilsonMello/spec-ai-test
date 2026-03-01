@@ -27,3 +27,15 @@ func (r *InMemoryPostRepository) SavePost(post *domain.Post) error {
 	r.posts[post.ID] = post
 	return nil
 }
+
+// GetPostByID retrieves a post by its ID.
+func (r *InMemoryPostRepository) GetPostByID(id string) (*domain.Post, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	post, ok := r.posts[id]
+	if !ok {
+		return nil, domain.ErrPostNotFound
+	}
+	return post, nil
+}
