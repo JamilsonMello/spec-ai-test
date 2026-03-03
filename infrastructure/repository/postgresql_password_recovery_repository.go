@@ -57,3 +57,29 @@ func (r *PostgreSQLPasswordRecoveryRepository) UpdatePasswordRecovery(recovery *
 	}
 	return nil
 }
+
+func (r *PostgreSQLPasswordRecoveryRepository) InvalidateAllUserTokens(userID string) error {
+	query := `UPDATE password_recoveries SET used = true WHERE user_id = $1 AND used = false`
+	_, err := r.db.Exec(query, userID)
+	if err != nil {
+		return fmt.Errorf("failed to invalidate user tokens: %w", err)
+	}
+	return nil
+}
+
+func (r *PostgreSQLPasswordRecoveryRepository) GetLatestPasswordRecoveryByUserID(userID string) (*domain.PasswordRecovery, error) {
+	query := `SELECT id, token, user_id, expires_at, used, created_at
+		FROM password_recoveries WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1`
+	recovery := &domain.PasswordRecovery{}
+	err := r.db.QueryRow(query, userID).Scan(
+		&recovery.ID, &recovery.Token, &recovery.UserID,
+		&recovery.ExpiresAt, &recovery.Used, &recovery.CreatedAt,
+	)
+	if err == sql.ErrNoRows {
+		return nil, domain.ErrRecoveryTokenNotFound
+	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to get latest password recovery: %w", err)
+	}
+	return recovery, nil
+}

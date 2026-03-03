@@ -11,15 +11,17 @@ import (
 
 // PasswordRecoveryHandler handles HTTP requests related to password recovery.
 type PasswordRecoveryHandler struct {
-	RequestPasswordRecoveryUseCase *usecase.RequestPasswordRecoveryUseCase
-	ResetPasswordUseCase           *usecase.ResetPasswordUseCase
+	RequestPasswordRecoveryUseCase    *usecase.RequestPasswordRecoveryUseCase
+	ResetPasswordUseCase              *usecase.ResetPasswordUseCase
+	ResendPasswordRecoveryTokenUseCase *usecase.ResendPasswordRecoveryTokenUseCase
 }
 
 // NewPasswordRecoveryHandler creates a new PasswordRecoveryHandler.
-func NewPasswordRecoveryHandler(recoveryUC *usecase.RequestPasswordRecoveryUseCase, resetUC *usecase.ResetPasswordUseCase) *PasswordRecoveryHandler {
+func NewPasswordRecoveryHandler(recoveryUC *usecase.RequestPasswordRecoveryUseCase, resetUC *usecase.ResetPasswordUseCase, resendUC *usecase.ResendPasswordRecoveryTokenUseCase) *PasswordRecoveryHandler {
 	return &PasswordRecoveryHandler{
-		RequestPasswordRecoveryUseCase: recoveryUC,
-		ResetPasswordUseCase:           resetUC,
+		RequestPasswordRecoveryUseCase:    recoveryUC,
+		ResetPasswordUseCase:              resetUC,
+		ResendPasswordRecoveryTokenUseCase: resendUC,
 	}
 }
 
@@ -40,6 +42,20 @@ func (h *PasswordRecoveryHandler) RequestPasswordRecovery(c echo.Context) error 
 	}
 
 	return c.JSON(http.StatusOK, resp)
+}
+
+// ResendToken handles the POST /api/password/resend-token request.
+func (h *PasswordRecoveryHandler) ResendToken(c echo.Context) error {
+	var req usecase.ResendTokenRequest
+	if err := c.Bind(&req); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request payload"})
+	}
+
+	if err := h.ResendPasswordRecoveryTokenUseCase.Execute(req); err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Internal server error"})
+	}
+
+	return c.JSON(http.StatusOK, map[string]string{"message": "Se o email existir em nossa base, você receberá um novo token de recuperação"})
 }
 
 // ResetPassword handles the POST /password-recovery/reset request.

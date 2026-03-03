@@ -36,11 +36,12 @@ func main() {
 
 	requestPasswordRecoveryUC := usecase.NewRequestPasswordRecoveryUseCase(userRepo, passwordRecoveryRepo, emailService)
 	resetPasswordUC := usecase.NewResetPasswordUseCase(userRepo, passwordRecoveryRepo)
+	resendPasswordRecoveryTokenUC := usecase.NewResendPasswordRecoveryTokenUseCase(userRepo, passwordRecoveryRepo, emailService)
 	createPostUC := usecase.NewCreatePostUseCase(postRepo)
 	validateTokenUC := usecase.NewValidateTokenUseCase(jwtValidatorService)
 
 	userHandler := handler.NewUserHandler(registerUserUC, listUsersUC, updateUserProfileUC, deleteUserUC)
-	passwordRecoveryHandler := handler.NewPasswordRecoveryHandler(requestPasswordRecoveryUC, resetPasswordUC)
+	passwordRecoveryHandler := handler.NewPasswordRecoveryHandler(requestPasswordRecoveryUC, resetPasswordUC, resendPasswordRecoveryTokenUC)
 	postHandler := handler.NewPostHandler(createPostUC)
 
 	e := echo.New()
@@ -48,6 +49,7 @@ func main() {
 	e.POST("/usuarios", userHandler.RegisterUser)
 	e.POST("/password-recovery", passwordRecoveryHandler.RequestPasswordRecovery)
 	e.POST("/password-recovery/reset", passwordRecoveryHandler.ResetPassword)
+	e.POST("/api/password/resend-token", passwordRecoveryHandler.ResendToken)
 
 	protected := e.Group("")
 	protected.Use(middleware.AuthMiddleware(validateTokenUC))
