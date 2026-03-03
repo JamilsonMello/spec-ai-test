@@ -26,6 +26,8 @@ type PasswordRecoveryRepository interface {
 	SavePasswordRecovery(recovery *PasswordRecovery) error
 	GetPasswordRecoveryByToken(token string) (*PasswordRecovery, error)
 	UpdatePasswordRecovery(recovery *PasswordRecovery) error
+	InvalidateAllUserTokens(userID string) error
+	GetLatestPasswordRecoveryByUserID(userID string) (*PasswordRecovery, error)
 }
 
 // EmailService defines the contract for email operations.

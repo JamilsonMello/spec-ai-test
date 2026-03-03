@@ -51,3 +51,35 @@ func (r *InMemoryPasswordRecoveryRepository) UpdatePasswordRecovery(recovery *do
 	r.recovery[recovery.Token] = recovery
 	return nil
 }
+
+// InvalidateAllUserTokens marks all tokens for a user as used.
+func (r *InMemoryPasswordRecoveryRepository) InvalidateAllUserTokens(userID string) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	for _, rec := range r.recovery {
+		if rec.UserID == userID && !rec.Used {
+			rec.Used = true
+		}
+	}
+	return nil
+}
+
+// GetLatestPasswordRecoveryByUserID retrieves the most recently created token for a user.
+func (r *InMemoryPasswordRecoveryRepository) GetLatestPasswordRecoveryByUserID(userID string) (*domain.PasswordRecovery, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	var latest *domain.PasswordRecovery
+	for _, rec := range r.recovery {
+		if rec.UserID == userID {
+			if latest == nil || rec.CreatedAt.After(latest.CreatedAt) {
+				latest = rec
+			}
+		}
+	}
+	if latest == nil {
+		return nil, ErrRecoveryTokenNotFound
+	}
+	return latest, nil
+}
