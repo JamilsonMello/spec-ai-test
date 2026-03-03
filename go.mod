@@ -1,10 +1,11 @@
 module github.com/example/cadastro-de-usuarios
 
-go 1.18
+go 1.21
 
 require (
 	github.com/google/uuid v1.3.0
 	github.com/labstack/echo/v4 v4.11.4
+	github.com/lib/pq v1.11.2
 	golang.org/x/crypto v0.17.0
 )
 

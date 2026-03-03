@@ -2,26 +2,33 @@ package main
 
 import (
 	"log"
+	"os"
 
 	"github.com/labstack/echo/v4"
-	"github.com/example/cadastro-de-usuarios/presentation/handler"
-	"github.com/example/cadastro-de-usuarios/presentation/middleware"
+	_ "github.com/lib/pq"
+
+	"github.com/example/cadastro-de-usuarios/application/usecase"
+	pkgdb "github.com/example/cadastro-de-usuarios/pkg/db"
 	"github.com/example/cadastro-de-usuarios/infrastructure/repository"
 	"github.com/example/cadastro-de-usuarios/infrastructure/service"
-	"github.com/example/cadastro-de-usuarios/application/usecase"
+	"github.com/example/cadastro-de-usuarios/presentation/handler"
+	"github.com/example/cadastro-de-usuarios/presentation/middleware"
 )
 
 func main() {
-	// Initialize repositories (Infrastructure layer)
-	userRepo := repository.NewInMemoryUserRepository()
-	passwordRecoveryRepo := repository.NewInMemoryPasswordRecoveryRepository()
-	postRepo := repository.NewInMemoryPostRepository()
+	db, err := pkgdb.Connect(os.Getenv("DATABASE_URL"))
+	if err != nil {
+		log.Fatalf("failed to connect to database: %v", err)
+	}
+	defer db.Close()
 
-	// Initialize services (Infrastructure layer)
+	userRepo := repository.NewPostgreSQLUserRepository(db)
+	passwordRecoveryRepo := repository.NewPostgreSQLPasswordRecoveryRepository(db)
+	postRepo := repository.NewPostgreSQLPostRepository(db)
+
 	emailService := service.NewEmailService()
 	jwtValidatorService := service.NewJWTValidatorService()
 
-	// Initialize use cases (Application layer)
 	registerUserUC := usecase.NewRegisterUserUseCase(userRepo)
 	listUsersUC := usecase.NewListUsersUseCase(userRepo)
 	deleteUserUC := usecase.NewDeleteUserUseCase(userRepo)
@@ -36,15 +43,12 @@ func main() {
 	passwordRecoveryHandler := handler.NewPasswordRecoveryHandler(requestPasswordRecoveryUC, resetPasswordUC)
 	postHandler := handler.NewPostHandler(createPostUC)
 
-	// Set up Echo router
 	e := echo.New()
 
-	// Register public routes
 	e.POST("/usuarios", userHandler.RegisterUser)
 	e.POST("/password-recovery", passwordRecoveryHandler.RequestPasswordRecovery)
 	e.POST("/password-recovery/reset", passwordRecoveryHandler.ResetPassword)
 
-	// Register protected routes
 	protected := e.Group("")
 	protected.Use(middleware.AuthMiddleware(validateTokenUC))
 
@@ -53,7 +57,6 @@ func main() {
 	protected.PUT("/usuarios/:id", userHandler.UpdateUserProfile)
 	protected.POST("/posts", postHandler.CreatePost)
 
-	// Start the HTTP server
 	port := ":8080"
 	log.Printf("Server listening on port %s\n", port)
 	log.Fatal(e.Start(port))

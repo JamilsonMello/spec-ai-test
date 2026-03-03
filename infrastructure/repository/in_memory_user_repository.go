@@ -56,7 +56,7 @@ func (r *InMemoryUserRepository) GetUserByID(id string) (*domain.User, error) {
 			return user, nil
 		}
 	}
-	return nil, ErrUserNotFound
+	return nil, domain.ErrUserNotFound
 }
 
 // UpdateUser updates an existing user in the in-memory store.
@@ -65,7 +65,7 @@ func (r *InMemoryUserRepository) UpdateUser(user *domain.User) error {
 	defer r.mu.Unlock()
 
 	if _, exists := r.users[user.Email]; !exists {
-		return ErrUserNotFound
+		return domain.ErrUserNotFound
 	}
 
 	r.users[user.Email] = user
@@ -130,7 +130,7 @@ func (r *InMemoryUserRepository) DeleteUser(id string) error {
 	}
 
 	if !found {
-		return ErrUserNotFound
+		return domain.ErrUserNotFound
 	}
 
 	// Delete user from map

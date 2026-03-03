@@ -144,7 +144,7 @@ func (h *UserHandler) UpdateUserProfile(c echo.Context) error {
 	// Get user ID from path parameter
 	req.UserID = c.Param("id")
 
-	resp, err := h.UpdateUserProfileUseCase.Execute(req)
+	_, err := h.UpdateUserProfileUseCase.Execute(req)
 	if err != nil {
 		if errors.Is(err, usecase.ErrInvalidNameUpdate) ||
 			errors.Is(err, usecase.ErrInvalidBirthDateUpdate) ||
