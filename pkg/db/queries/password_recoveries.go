@@ -2,14 +2,13 @@ package queries
 
 const CreatePasswordRecoveriesTableSQL = `
 CREATE TABLE IF NOT EXISTS password_recoveries (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL,
+    id TEXT PRIMARY KEY,
     token TEXT UNIQUE NOT NULL,
+    user_id TEXT NOT NULL,
     expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
     used BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_user_recovery
+    CONSTRAINT fk_recovery_user
         FOREIGN KEY(user_id)
         REFERENCES users(id)
         ON DELETE CASCADE

@@ -9,7 +9,6 @@ import (
 
 // Custom errors for password recovery
 var (
-	ErrUserNotFound          = errors.New("usuário não encontrado")
 	ErrRecoveryTokenNotFound = errors.New("token de recuperação não encontrado")
 	ErrTokenExpired          = errors.New("token expirado")
 	ErrTokenAlreadyUsed      = errors.New("token já foi utilizado")
