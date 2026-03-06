@@ -62,10 +62,11 @@ func (uc *RequestPasswordRecoveryUseCase) Execute(req RequestPasswordRecoveryReq
 		return nil, err
 	}
 
-	// 4. Send email (in production)
-	// For now, we'll just return the token in the response
 	if uc.EmailService != nil {
-		_ = uc.EmailService.SendPasswordRecoveryEmail(user.Email, recovery.Token)
+		_ = uc.EmailService.SendTemplatedEmail(user.Email, "PasswordRecovery", map[string]interface{}{
+			"token": recovery.Token,
+			"email": user.Email,
+		})
 	}
 
 	return &RequestPasswordRecoveryResponse{

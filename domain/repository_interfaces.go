@@ -31,4 +31,5 @@ type PasswordRecoveryRepository interface {
 // EmailService defines the contract for email operations.
 type EmailService interface {
 	SendPasswordRecoveryEmail(email string, token string) error
+	SendTemplatedEmail(to string, templateName string, templateData map[string]interface{}) error
 }
