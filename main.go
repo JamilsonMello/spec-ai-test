@@ -3,6 +3,8 @@ package main
 import (
 	"log"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/labstack/echo/v4"
 	_ "github.com/lib/pq"
@@ -26,7 +28,19 @@ func main() {
 	passwordRecoveryRepo := repository.NewPostgreSQLPasswordRecoveryRepository(db)
 	postRepo := repository.NewPostgreSQLPostRepository(db)
 
-	emailService := service.NewEmailService()
+	logger := log.New(os.Stdout, "", log.LstdFlags)
+
+	emailCfg, err := service.LoadEmailServiceConfig()
+	if err != nil {
+		log.Fatalf("failed to load email service config: %v", err)
+	}
+
+	emailService, err := service.NewEmailService(emailCfg, logger)
+	if err != nil {
+		log.Fatalf("failed to create email service: %v", err)
+	}
+	emailService.StartWorkerPool()
+
 	jwtValidatorService := service.NewJWTValidatorService()
 
 	registerUserUC := usecase.NewRegisterUserUseCase(userRepo)
@@ -56,6 +70,15 @@ func main() {
 	protected.DELETE("/usuarios/:id", userHandler.DeleteUser)
 	protected.PUT("/usuarios/:id", userHandler.UpdateUserProfile)
 	protected.POST("/posts", postHandler.CreatePost)
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		<-quit
+		emailService.StopWorkerPool()
+		_ = e.Close()
+	}()
 
 	port := ":8080"
 	log.Printf("Server listening on port %s\n", port)

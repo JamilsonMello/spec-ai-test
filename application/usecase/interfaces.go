@@ -12,6 +12,7 @@ type PasswordRecoveryRepository interface {
 // EmailService provides an interface for sending emails.
 type EmailService interface {
 	SendPasswordRecoveryEmail(email string, token string) error
+	SendTemplatedEmail(to string, templateName string, templateData map[string]interface{}) error
 }
 
 // PostRepository provides an interface for post persistence.
