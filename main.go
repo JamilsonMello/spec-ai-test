@@ -8,9 +8,9 @@ import (
 	_ "github.com/lib/pq"
 
 	"github.com/example/cadastro-de-usuarios/application/usecase"
-	pkgdb "github.com/example/cadastro-de-usuarios/pkg/db"
 	"github.com/example/cadastro-de-usuarios/infrastructure/repository"
 	"github.com/example/cadastro-de-usuarios/infrastructure/service"
+	pkgdb "github.com/example/cadastro-de-usuarios/pkg/db"
 	"github.com/example/cadastro-de-usuarios/presentation/handler"
 	"github.com/example/cadastro-de-usuarios/presentation/middleware"
 )
@@ -45,7 +45,7 @@ func main() {
 
 	e := echo.New()
 
-	e.POST("/usuarios", userHandler.RegisterUser)
+	e.POST("/api/users/register", userHandler.RegisterUser)
 	e.POST("/password-recovery", passwordRecoveryHandler.RequestPasswordRecovery)
 	e.POST("/password-recovery/reset", passwordRecoveryHandler.ResetPassword)
 

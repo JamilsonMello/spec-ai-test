@@ -44,14 +44,14 @@ func (h *UserHandler) RegisterUser(c echo.Context) error {
 			errors.Is(err, usecase.ErrInvalidBirthDate) ||
 			errors.Is(err, usecase.ErrUserTooYoung) ||
 			errors.Is(err, usecase.ErrFutureBirthDate) {
-			return c.JSON(http.StatusUnprocessableEntity, map[string]string{"error": err.Error()})
+			return c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error(), "code": "VALIDATION_ERROR"})
 		} else if errors.Is(err, domain.ErrEmailAlreadyExists) || errors.Is(err, usecase.ErrEmailInUse) {
-			return c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
+			return c.JSON(http.StatusConflict, map[string]string{"error": err.Error(), "code": "DUPLICATE_EMAIL"})
 		}
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Internal server error"})
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Erro interno do servidor ao processar o cadastro", "code": "INTERNAL_SERVER_ERROR"})
 	}
 
-	return c.JSON(http.StatusOK, resp)
+	return c.JSON(http.StatusCreated, resp)
 }
 
 // ListUsers handles the GET /usuarios/listar request.
