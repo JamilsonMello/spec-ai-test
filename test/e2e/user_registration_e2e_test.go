@@ -27,19 +27,19 @@ type ErrorResponse struct {
 }
 
 type RegisterUserRequest struct {
-	Name      string `json:"name"`
-	Surname   string `json:"surname"`
-	Email     string `json:"email"`
-	BirthDate string `json:"birthDate"`
-	Password  string `json:"password"`
+	Nome           string `json:"nome"`
+	Sobrenome      string `json:"sobrenome"`
+	Email          string `json:"email"`
+	DataNascimento string `json:"dataNascimento"`
+	Senha          string `json:"senha"`
 }
 
 type RegisterUserResponse struct {
-	ID        string `json:"id"`
-	Name      string `json:"name"`
-	Surname   string `json:"surname"`
-	Email     string `json:"email"`
-	BirthDate string `json:"birthDate"`
+	ID             string `json:"id"`
+	Nome           string `json:"nome"`
+	Sobrenome      string `json:"sobrenome"`
+	Email          string `json:"email"`
+	DataNascimento string `json:"dataNascimento"`
 }
 
 type UserRepositorySpy struct {
@@ -89,7 +89,7 @@ func setupTestServer(db *sql.DB) (*echo.Echo, *UserRepositorySpy) {
 	userHandler := handler.NewUserHandler(registerUserUC, nil, nil, nil)
 
 	e := echo.New()
-	e.POST("/usuarios", userHandler.RegisterUser)
+	e.POST("/api/users/register", userHandler.RegisterUser)
 
 	return e, userRepoSpy
 }
@@ -114,15 +114,15 @@ func TestUserRegistration_Success(t *testing.T) {
 	e, _ := setupTestServer(db)
 
 	reqBody := RegisterUserRequest{
-		Name:      "João",
-		Surname:   "Silva",
-		Email:     "joao.silva@example.com",
-		BirthDate: "1990-01-01",
-		Password:  "SenhaSegura123",
+		Nome:           "João",
+		Sobrenome:      "Silva",
+		Email:          "joao.silva@example.com",
+		DataNascimento: "1990-01-01",
+		Senha:          "SenhaSegura123",
 	}
 	reqJSON, _ := json.Marshal(reqBody)
 
-	req := httptest.NewRequest(http.MethodPost, "/usuarios", bytes.NewReader(reqJSON))
+	req := httptest.NewRequest(http.MethodPost, "/api/users/register", bytes.NewReader(reqJSON))
 	req.Header.Set("Content-Type", "application/json")
 	rec := httptest.NewRecorder()
 	e.ServeHTTP(rec, req)
@@ -132,10 +132,10 @@ func TestUserRegistration_Success(t *testing.T) {
 	var resp RegisterUserResponse
 	err = json.Unmarshal(rec.Body.Bytes(), &resp)
 	require.NoError(t, err)
-	assert.Equal(t, "João", resp.Name)
-	assert.Equal(t, "Silva", resp.Surname)
+	assert.Equal(t, "João", resp.Nome)
+	assert.Equal(t, "Silva", resp.Sobrenome)
 	assert.Equal(t, "joao.silva@example.com", resp.Email)
-	assert.Equal(t, "1990-01-01", resp.BirthDate)
+	assert.Equal(t, "1990-01-01", resp.DataNascimento)
 	assert.NotEmpty(t, resp.ID)
 
 	var persistedName, persistedSurname, persistedEmail, persistedBirthDate, persistedPassword string
@@ -166,23 +166,23 @@ func TestUserRegistration_DuplicateEmail(t *testing.T) {
 	e, _ := setupTestServer(db)
 
 	firstUser := RegisterUserRequest{
-		Name:      "Maria",
-		Surname:   "Santos",
-		Email:     "maria.santos@example.com",
-		BirthDate: "1985-05-15",
+		Nome:           "Maria",
+		Sobrenome:      "Santos",
+		Email:          "maria.santos@example.com",
+		DataNascimento: "1985-05-15",
 	}
 	reqJSON, _ := json.Marshal(firstUser)
-	req := httptest.NewRequest(http.MethodPost, "/usuarios", bytes.NewReader(reqJSON))
+	req := httptest.NewRequest(http.MethodPost, "/api/users/register", bytes.NewReader(reqJSON))
 	req.Header.Set("Content-Type", "application/json")
 	rec := httptest.NewRecorder()
 	e.ServeHTTP(rec, req)
 	assert.Equal(t, http.StatusCreated, rec.Code)
 
 	duplicateUser := RegisterUserRequest{
-		Name:      "João",
-		Surname:   "Silva",
-		Email:     "maria.santos@example.com",
-		BirthDate: "1990-01-01",
+		Nome:           "João",
+		Sobrenome:      "Silva",
+		Email:          "maria.santos@example.com",
+		DataNascimento: "1990-01-01",
 	}
 	reqJSON, _ = json.Marshal(duplicateUser)
 	req = httptest.NewRequest(http.MethodPost, "/usuarios", bytes.NewReader(reqJSON))
@@ -215,14 +215,14 @@ func TestUserRegistration_InvalidName(t *testing.T) {
 	e, _ := setupTestServer(db)
 
 	reqBody := RegisterUserRequest{
-		Name:      "J",
-		Surname:   "Silva",
-		Email:     "joao.silva@example.com",
-		BirthDate: "1990-01-01",
+		Nome:           "J",
+		Sobrenome:      "Silva",
+		Email:          "joao.silva@example.com",
+		DataNascimento: "1990-01-01",
 	}
 	reqJSON, _ := json.Marshal(reqBody)
 
-	req := httptest.NewRequest(http.MethodPost, "/usuarios", bytes.NewReader(reqJSON))
+	req := httptest.NewRequest(http.MethodPost, "/api/users/register", bytes.NewReader(reqJSON))
 	req.Header.Set("Content-Type", "application/json")
 	rec := httptest.NewRecorder()
 	e.ServeHTTP(rec, req)
@@ -252,14 +252,14 @@ func TestUserRegistration_InvalidSurname(t *testing.T) {
 	e, _ := setupTestServer(db)
 
 	reqBody := RegisterUserRequest{
-		Name:      "João",
-		Surname:   "S",
-		Email:     "joao.silva@example.com",
-		BirthDate: "1990-01-01",
+		Nome:           "João",
+		Sobrenome:      "S",
+		Email:          "joao.silva@example.com",
+		DataNascimento: "1990-01-01",
 	}
 	reqJSON, _ := json.Marshal(reqBody)
 
-	req := httptest.NewRequest(http.MethodPost, "/usuarios", bytes.NewReader(reqJSON))
+	req := httptest.NewRequest(http.MethodPost, "/api/users/register", bytes.NewReader(reqJSON))
 	req.Header.Set("Content-Type", "application/json")
 	rec := httptest.NewRecorder()
 	e.ServeHTTP(rec, req)
@@ -289,14 +289,14 @@ func TestUserRegistration_InvalidEmailFormat(t *testing.T) {
 	e, _ := setupTestServer(db)
 
 	reqBody := RegisterUserRequest{
-		Name:      "João",
-		Surname:   "Silva",
-		Email:     "invalid-email",
-		BirthDate: "1990-01-01",
+		Nome:           "João",
+		Sobrenome:      "Silva",
+		Email:          "invalid-email",
+		DataNascimento: "1990-01-01",
 	}
 	reqJSON, _ := json.Marshal(reqBody)
 
-	req := httptest.NewRequest(http.MethodPost, "/usuarios", bytes.NewReader(reqJSON))
+	req := httptest.NewRequest(http.MethodPost, "/api/users/register", bytes.NewReader(reqJSON))
 	req.Header.Set("Content-Type", "application/json")
 	rec := httptest.NewRecorder()
 	e.ServeHTTP(rec, req)
@@ -326,14 +326,14 @@ func TestUserRegistration_InvalidBirthDateFormat(t *testing.T) {
 	e, _ := setupTestServer(db)
 
 	reqBody := RegisterUserRequest{
-		Name:      "João",
-		Surname:   "Silva",
-		Email:     "joao.silva@example.com",
-		BirthDate: "01-01-1990",
+		Nome:           "João",
+		Sobrenome:      "Silva",
+		Email:          "joao.silva@example.com",
+		DataNascimento: "01-01-1990",
 	}
 	reqJSON, _ := json.Marshal(reqBody)
 
-	req := httptest.NewRequest(http.MethodPost, "/usuarios", bytes.NewReader(reqJSON))
+	req := httptest.NewRequest(http.MethodPost, "/api/users/register", bytes.NewReader(reqJSON))
 	req.Header.Set("Content-Type", "application/json")
 	rec := httptest.NewRecorder()
 	e.ServeHTTP(rec, req)
@@ -363,14 +363,14 @@ func TestUserRegistration_FutureBirthDate(t *testing.T) {
 	e, _ := setupTestServer(db)
 
 	reqBody := RegisterUserRequest{
-		Name:      "João",
-		Surname:   "Silva",
-		Email:     "joao.silva@example.com",
-		BirthDate: "2030-01-01",
+		Nome:           "João",
+		Sobrenome:      "Silva",
+		Email:          "joao.silva@example.com",
+		DataNascimento: "2030-01-01",
 	}
 	reqJSON, _ := json.Marshal(reqBody)
 
-	req := httptest.NewRequest(http.MethodPost, "/usuarios", bytes.NewReader(reqJSON))
+	req := httptest.NewRequest(http.MethodPost, "/api/users/register", bytes.NewReader(reqJSON))
 	req.Header.Set("Content-Type", "application/json")
 	rec := httptest.NewRecorder()
 	e.ServeHTTP(rec, req)
@@ -400,14 +400,14 @@ func TestUserRegistration_UserUnder18(t *testing.T) {
 	e, _ := setupTestServer(db)
 
 	reqBody := RegisterUserRequest{
-		Name:      "João",
-		Surname:   "Silva",
-		Email:     "joao.silva@example.com",
-		BirthDate: "2015-01-01",
+		Nome:           "João",
+		Sobrenome:      "Silva",
+		Email:          "joao.silva@example.com",
+		DataNascimento: "2015-01-01",
 	}
 	reqJSON, _ := json.Marshal(reqBody)
 
-	req := httptest.NewRequest(http.MethodPost, "/usuarios", bytes.NewReader(reqJSON))
+	req := httptest.NewRequest(http.MethodPost, "/api/users/register", bytes.NewReader(reqJSON))
 	req.Header.Set("Content-Type", "application/json")
 	rec := httptest.NewRecorder()
 	e.ServeHTTP(rec, req)
@@ -437,15 +437,15 @@ func TestUserRegistration_ShortPassword(t *testing.T) {
 	e, _ := setupTestServer(db)
 
 	reqBody := RegisterUserRequest{
-		Name:      "João",
-		Surname:   "Silva",
-		Email:     "joao.silva@example.com",
-		BirthDate: "1990-01-01",
-		Password:  "abc",
+		Nome:           "João",
+		Sobrenome:      "Silva",
+		Email:          "joao.silva@example.com",
+		DataNascimento: "1990-01-01",
+		Senha:          "abc",
 	}
 	reqJSON, _ := json.Marshal(reqBody)
 
-	req := httptest.NewRequest(http.MethodPost, "/usuarios", bytes.NewReader(reqJSON))
+	req := httptest.NewRequest(http.MethodPost, "/api/users/register", bytes.NewReader(reqJSON))
 	req.Header.Set("Content-Type", "application/json")
 	rec := httptest.NewRecorder()
 	e.ServeHTTP(rec, req)
@@ -477,14 +477,14 @@ func TestUserRegistration_PersistenceFailure(t *testing.T) {
 	userRepoSpy.forceError = errors.New("database connection failed")
 
 	reqBody := RegisterUserRequest{
-		Name:      "João",
-		Surname:   "Silva",
-		Email:     "joao.silva@example.com",
-		BirthDate: "1990-01-01",
+		Nome:           "João",
+		Sobrenome:      "Silva",
+		Email:          "joao.silva@example.com",
+		DataNascimento: "1990-01-01",
 	}
 	reqJSON, _ := json.Marshal(reqBody)
 
-	req := httptest.NewRequest(http.MethodPost, "/usuarios", bytes.NewReader(reqJSON))
+	req := httptest.NewRequest(http.MethodPost, "/api/users/register", bytes.NewReader(reqJSON))
 	req.Header.Set("Content-Type", "application/json")
 	rec := httptest.NewRecorder()
 	e.ServeHTTP(rec, req)

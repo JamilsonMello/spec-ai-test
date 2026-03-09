@@ -36,17 +36,17 @@ func NewRegisterUserUseCase(repo domain.UserRepository) *RegisterUserUseCase {
 // Execute performs the user registration process.
 func (uc *RegisterUserUseCase) Execute(req RegisterUserRequest) (*RegisterUserResponse, error) {
 	// 1. Parse and validate BirthDate
-	birthDate, err := time.Parse("2006-01-02", req.BirthDate)
+	birthDate, err := time.Parse("2006-01-02", req.DataNascimento)
 	if err != nil {
 		return nil, ErrInvalidBirthDate
 	}
 
 	user := &domain.User{
-		Name:      req.Name,
-		Surname:   req.Surname,
+		Name:      req.Nome,
+		Surname:   req.Sobrenome,
 		Email:     req.Email,
 		BirthDate: birthDate,
-		Password:  req.Password,
+		Password:  req.Senha,
 		Role:      "user",
 		CreatedAt: time.Now(),
 	}
@@ -64,7 +64,7 @@ func (uc *RegisterUserUseCase) Execute(req RegisterUserRequest) (*RegisterUserRe
 		return nil, ErrInvalidEmail
 	}
 
-	if !user.IsValidPassword(req.Password) {
+	if !user.IsValidPassword(req.Senha) {
 		return nil, ErrShortPassword
 	}
 
@@ -95,10 +95,10 @@ func (uc *RegisterUserUseCase) Execute(req RegisterUserRequest) (*RegisterUserRe
 
 	// 5. Return response
 	return &RegisterUserResponse{
-		ID:        uuid.MustParse(user.ID),
-		Name:      user.Name,
-		Surname:   user.Surname,
-		Email:     user.Email,
-		BirthDate: user.BirthDate.Format("2006-01-02"),
+		ID:             uuid.MustParse(user.ID),
+		Nome:           user.Name,
+		Sobrenome:      user.Surname,
+		Email:          user.Email,
+		DataNascimento: user.BirthDate.Format("2006-01-02"),
 	}, nil
 }
