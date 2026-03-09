@@ -11,13 +11,14 @@ import (
 
 // Custom errors for use case validation
 var (
-	ErrInvalidName       = errors.New("nome deve ter entre 2 e 50 caracteres e conter apenas letras e espaços")
-	ErrInvalidSurname    = errors.New("sobrenome deve ter entre 2 e 50 caracteres e conter apenas letras e espaços")
-	ErrInvalidEmail      = errors.New("email inválido")
-	ErrEmailInUse        = errors.New("email já está em uso")
-	ErrInvalidBirthDate  = errors.New("data de nascimento inválida")
-	ErrUserTooYoung      = errors.New("usuário deve ter no mínimo 18 anos")
-	ErrFutureBirthDate   = errors.New("data de nascimento não pode ser no futuro")
+	ErrInvalidName      = errors.New("Nome inválido")
+	ErrInvalidSurname   = errors.New("Sobrenome inválido")
+	ErrInvalidEmail     = errors.New("Email em formato incorreto")
+	ErrEmailInUse       = errors.New("Email já em uso")
+	ErrInvalidBirthDate = errors.New("Data de nascimento inválida")
+	ErrUserTooYoung     = errors.New("Usuário menor de 18 anos")
+	ErrFutureBirthDate  = errors.New("data de nascimento não pode ser no futuro")
+	ErrShortPassword    = errors.New("Senha muito curta")
 )
 
 // RegisterUserUseCase handles the business logic for user registration.
@@ -45,6 +46,7 @@ func (uc *RegisterUserUseCase) Execute(req RegisterUserRequest) (*RegisterUserRe
 		Surname:   req.Surname,
 		Email:     req.Email,
 		BirthDate: birthDate,
+		Password:  req.Password,
 		Role:      "user",
 		CreatedAt: time.Now(),
 	}
@@ -62,8 +64,12 @@ func (uc *RegisterUserUseCase) Execute(req RegisterUserRequest) (*RegisterUserRe
 		return nil, ErrInvalidEmail
 	}
 
+	if !user.IsValidPassword(req.Password) {
+		return nil, ErrShortPassword
+	}
+
 	if !user.IsPastDate() {
-		return nil, ErrFutureBirthDate
+		return nil, ErrInvalidBirthDate
 	}
 
 	if !user.IsAdult() {
@@ -89,10 +95,10 @@ func (uc *RegisterUserUseCase) Execute(req RegisterUserRequest) (*RegisterUserRe
 
 	// 5. Return response
 	return &RegisterUserResponse{
-		ID:          uuid.MustParse(user.ID),
-		Name:        user.Name,
-		Surname:     user.Surname,
-		Email:       user.Email,
-		BirthDate:   user.BirthDate.Format("2006-01-02"),
+		ID:        uuid.MustParse(user.ID),
+		Name:      user.Name,
+		Surname:   user.Surname,
+		Email:     user.Email,
+		BirthDate: user.BirthDate.Format("2006-01-02"),
 	}, nil
 }
