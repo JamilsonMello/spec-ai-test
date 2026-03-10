@@ -10,15 +10,15 @@ import (
 	"github.com/example/cadastro-de-usuarios/domain"
 )
 
-type PostgreSQLUserRepository struct {
+type UserRepository struct {
 	db *sql.DB
 }
 
-func NewPostgreSQLUserRepository(db *sql.DB) *PostgreSQLUserRepository {
-	return &PostgreSQLUserRepository{db: db}
+func NewUserRepository(db *sql.DB) *UserRepository {
+	return &UserRepository{db: db}
 }
 
-func (r *PostgreSQLUserRepository) SaveUser(user *domain.User) error {
+func (r *UserRepository) SaveUser(user *domain.User) error {
 	query := `INSERT INTO users (id, name, surname, email, birth_date, password, recovery_token, role, created_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`
 	_, err := r.db.Exec(query, user.ID, user.Name, user.Surname, user.Email, user.BirthDate, user.Password, user.RecoveryToken, user.Role, user.CreatedAt)
@@ -31,7 +31,7 @@ func (r *PostgreSQLUserRepository) SaveUser(user *domain.User) error {
 	return nil
 }
 
-func (r *PostgreSQLUserRepository) GetUserByEmail(email string) (*domain.User, error) {
+func (r *UserRepository) GetUserByEmail(email string) (*domain.User, error) {
 	query := `SELECT id, name, surname, email, birth_date, password, recovery_token, role, created_at
 		FROM users WHERE email = $1`
 	user := &domain.User{}
@@ -48,7 +48,7 @@ func (r *PostgreSQLUserRepository) GetUserByEmail(email string) (*domain.User, e
 	return user, nil
 }
 
-func (r *PostgreSQLUserRepository) GetUserByID(id string) (*domain.User, error) {
+func (r *UserRepository) GetUserByID(id string) (*domain.User, error) {
 	query := `SELECT id, name, surname, email, birth_date, password, recovery_token, role, created_at
 		FROM users WHERE id = $1`
 	user := &domain.User{}
@@ -65,7 +65,7 @@ func (r *PostgreSQLUserRepository) GetUserByID(id string) (*domain.User, error) 
 	return user, nil
 }
 
-func (r *PostgreSQLUserRepository) UpdateUser(user *domain.User) error {
+func (r *UserRepository) UpdateUser(user *domain.User) error {
 	query := `UPDATE users SET name=$1, surname=$2, email=$3, birth_date=$4, password=$5, recovery_token=$6, role=$7
 		WHERE id=$8`
 	result, err := r.db.Exec(query, user.Name, user.Surname, user.Email, user.BirthDate, user.Password, user.RecoveryToken, user.Role, user.ID)
@@ -82,7 +82,7 @@ func (r *PostgreSQLUserRepository) UpdateUser(user *domain.User) error {
 	return nil
 }
 
-func (r *PostgreSQLUserRepository) DeleteUser(id string) error {
+func (r *UserRepository) DeleteUser(id string) error {
 	result, err := r.db.Exec(`DELETE FROM users WHERE id=$1`, id)
 	if err != nil {
 		return fmt.Errorf("failed to delete user: %w", err)
@@ -97,7 +97,7 @@ func (r *PostgreSQLUserRepository) DeleteUser(id string) error {
 	return nil
 }
 
-func (r *PostgreSQLUserRepository) ListUsers(filter domain.UserFilter, page int, limit int) ([]*domain.User, int, error) {
+func (r *UserRepository) ListUsers(filter domain.UserFilter, page int, limit int) ([]*domain.User, int, error) {
 	where := "WHERE 1=1"
 	args := []interface{}{}
 	idx := 1

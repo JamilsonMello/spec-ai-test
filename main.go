@@ -8,9 +8,9 @@ import (
 	_ "github.com/lib/pq"
 
 	"github.com/example/cadastro-de-usuarios/application/usecase"
-	pkgdb "github.com/example/cadastro-de-usuarios/pkg/db"
 	"github.com/example/cadastro-de-usuarios/infrastructure/repository"
 	"github.com/example/cadastro-de-usuarios/infrastructure/service"
+	pkgdb "github.com/example/cadastro-de-usuarios/pkg/db"
 	"github.com/example/cadastro-de-usuarios/presentation/handler"
 	"github.com/example/cadastro-de-usuarios/presentation/middleware"
 )
@@ -22,9 +22,9 @@ func main() {
 	}
 	defer db.Close()
 
-	userRepo := repository.NewPostgreSQLUserRepository(db)
-	passwordRecoveryRepo := repository.NewPostgreSQLPasswordRecoveryRepository(db)
-	postRepo := repository.NewPostgreSQLPostRepository(db)
+	userRepo := repository.NewUserRepository(db)
+	passwordRecoveryRepo := repository.NewPasswordRecoveryRepository(db)
+	postRepo := repository.NewPostRepository(db)
 
 	emailService := service.NewEmailService()
 	jwtValidatorService := service.NewJWTValidatorService()
