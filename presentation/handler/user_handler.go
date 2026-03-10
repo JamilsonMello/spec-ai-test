@@ -78,7 +78,11 @@ func (h *UserHandler) ListUsers(c echo.Context) error {
 	// Parse page (default to 1)
 	page := 1
 	if pageStr := c.QueryParam("page"); pageStr != "" {
-		if parsedPage, err := strconv.Atoi(pageStr); err == nil && parsedPage > 0 {
+		parsedPage, err := strconv.Atoi(pageStr)
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request parameter"})
+		}
+		if parsedPage > 0 {
 			page = parsedPage
 		}
 	}
@@ -87,7 +91,11 @@ func (h *UserHandler) ListUsers(c echo.Context) error {
 	// Parse limit (default to 30, max 30)
 	limit := 30
 	if limitStr := c.QueryParam("limit"); limitStr != "" {
-		if parsedLimit, err := strconv.Atoi(limitStr); err == nil && parsedLimit > 0 {
+		parsedLimit, err := strconv.Atoi(limitStr)
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request parameter"})
+		}
+		if parsedLimit > 0 {
 			limit = parsedLimit
 			if limit > 30 {
 				limit = 30
