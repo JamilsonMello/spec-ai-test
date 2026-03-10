@@ -28,7 +28,7 @@ type UserResponse struct {
 
 // ListUsersResponse is the DTO for listing users output.
 type ListUsersResponse struct {
-	Users      []UserResponse `json:"users"`
+	Users      []UserResponse `json:"usuarios"`
 	TotalCount int            `json:"totalCount"`
 	Page       int            `json:"page"`
 	Limit      int            `json:"limit"`
