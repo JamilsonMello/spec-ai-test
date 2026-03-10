@@ -1,53 +1,59 @@
 package repository
 
 import (
-	"errors"
-	"sync"
+	"database/sql"
+	"fmt"
 
 	"github.com/example/cadastro-de-usuarios/domain"
 )
 
-var ErrRecoveryTokenNotFound = errors.New("recovery token not found")
-
-// InMemoryPasswordRecoveryRepository implements PasswordRecoveryRepository interface for in-memory storage.
-type InMemoryPasswordRecoveryRepository struct {
-	mu       sync.RWMutex
-	recovery map[string]*domain.PasswordRecovery // token -> PasswordRecovery
+type PasswordRecoveryRepository struct {
+	db *sql.DB
 }
 
-// NewInMemoryPasswordRecoveryRepository creates a new InMemoryPasswordRecoveryRepository.
-func NewInMemoryPasswordRecoveryRepository() *InMemoryPasswordRecoveryRepository {
-	return &InMemoryPasswordRecoveryRepository{
-		recovery: make(map[string]*domain.PasswordRecovery),
+func NewPasswordRecoveryRepository(db *sql.DB) *PasswordRecoveryRepository {
+	return &PasswordRecoveryRepository{db: db}
+}
+
+func (r *PasswordRecoveryRepository) SavePasswordRecovery(recovery *domain.PasswordRecovery) error {
+	query := `INSERT INTO password_recoveries (id, token, user_id, expires_at, used, created_at)
+		VALUES ($1, $2, $3, $4, $5, $6)`
+	_, err := r.db.Exec(query, recovery.ID, recovery.Token, recovery.UserID, recovery.ExpiresAt, recovery.Used, recovery.CreatedAt)
+	if err != nil {
+		return fmt.Errorf("failed to save password recovery: %w", err)
 	}
-}
-
-// SavePasswordRecovery saves a password recovery token to the in-memory store.
-func (r *InMemoryPasswordRecoveryRepository) SavePasswordRecovery(recovery *domain.PasswordRecovery) error {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	r.recovery[recovery.Token] = recovery
 	return nil
 }
 
-// GetPasswordRecoveryByToken retrieves a password recovery token by its token string.
-func (r *InMemoryPasswordRecoveryRepository) GetPasswordRecoveryByToken(token string) (*domain.PasswordRecovery, error) {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-
-	recovery, exists := r.recovery[token]
-	if !exists {
-		return nil, ErrRecoveryTokenNotFound
+func (r *PasswordRecoveryRepository) GetPasswordRecoveryByToken(token string) (*domain.PasswordRecovery, error) {
+	query := `SELECT id, token, user_id, expires_at, used, created_at
+		FROM password_recoveries WHERE token = $1`
+	recovery := &domain.PasswordRecovery{}
+	err := r.db.QueryRow(query, token).Scan(
+		&recovery.ID, &recovery.Token, &recovery.UserID,
+		&recovery.ExpiresAt, &recovery.Used, &recovery.CreatedAt,
+	)
+	if err == sql.ErrNoRows {
+		return nil, domain.ErrRecoveryTokenNotFound
+	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to get password recovery by token: %w", err)
 	}
 	return recovery, nil
 }
 
-// UpdatePasswordRecovery updates an existing password recovery token in the in-memory store.
-func (r *InMemoryPasswordRecoveryRepository) UpdatePasswordRecovery(recovery *domain.PasswordRecovery) error {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	r.recovery[recovery.Token] = recovery
+func (r *PasswordRecoveryRepository) UpdatePasswordRecovery(recovery *domain.PasswordRecovery) error {
+	query := `UPDATE password_recoveries SET used=$1 WHERE token=$2`
+	result, err := r.db.Exec(query, recovery.Used, recovery.Token)
+	if err != nil {
+		return fmt.Errorf("failed to update password recovery: %w", err)
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to check rows affected: %w", err)
+	}
+	if affected == 0 {
+		return domain.ErrRecoveryTokenNotFound
+	}
 	return nil
 }

@@ -9,9 +9,9 @@ import (
 
 // Custom errors for password reset
 var (
-	ErrInvalidToken        = errors.New("token inválido ou expirado")
-	ErrPasswordMismatch    = errors.New("senha e confirmação não conferem")
-	ErrPasswordTooShort    = errors.New("senha deve ter no mínimo 8 caracteres")
+	ErrInvalidToken     = errors.New("token inválido ou expirado")
+	ErrPasswordMismatch = errors.New("senha e confirmação não conferem")
+	ErrPasswordTooShort = errors.New("senha deve ter no mínimo 8 caracteres")
 )
 
 // ResetPasswordRequest is the DTO for password reset input.
@@ -28,14 +28,14 @@ type ResetPasswordResponse struct {
 
 // ResetPasswordUseCase handles the business logic for password reset.
 type ResetPasswordUseCase struct {
-	UserRepository            domain.UserRepository
+	UserRepository             domain.UserRepository
 	PasswordRecoveryRepository domain.PasswordRecoveryRepository
 }
 
 // NewResetPasswordUseCase creates a new ResetPasswordUseCase.
 func NewResetPasswordUseCase(userRepo domain.UserRepository, recoveryRepo domain.PasswordRecoveryRepository) *ResetPasswordUseCase {
 	return &ResetPasswordUseCase{
-		UserRepository:            userRepo,
+		UserRepository:             userRepo,
 		PasswordRecoveryRepository: recoveryRepo,
 	}
 }
