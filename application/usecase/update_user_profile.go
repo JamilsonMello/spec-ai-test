@@ -77,8 +77,8 @@ func (uc *UpdateUserProfileUseCase) saveUser(user *domain.User) error {
 
 func (uc *UpdateUserProfileUseCase) Execute(req UpdateUserProfileInput) (*UpdateUserProfileOutput, error) {
 
-	if err := uc.validateUserID(req.UserID); err != nil {
-		return nil, err
+	if userIDValidationErr := uc.validateUserID(req.UserID); userIDValidationErr != nil {
+		return nil, userIDValidationErr
 	}
 
 	user, repositoryErr := uc.UserRepository.GetUserByID(req.UserID)
@@ -91,12 +91,12 @@ func (uc *UpdateUserProfileUseCase) Execute(req UpdateUserProfileInput) (*Update
 		return nil, parseErr
 	}
 
-	if err := uc.updateUserFields(user, req.Name, birthDate); err != nil {
-		return nil, err
+	if fieldUpdateErr := uc.updateUserFields(user, req.Name, birthDate); fieldUpdateErr != nil {
+		return nil, fieldUpdateErr
 	}
 
-	if err := uc.saveUser(user); err != nil {
-		return nil, err
+	if saveErr := uc.saveUser(user); saveErr != nil {
+		return nil, saveErr
 	}
 
 	return &UpdateUserProfileOutput{

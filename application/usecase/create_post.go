@@ -67,21 +67,21 @@ func (uc *CreatePostUseCase) savePost(post *domain.Post) error {
 
 func (uc *CreatePostUseCase) Execute(req CreatePostInput) (*CreatePostOutput, error) {
 
-	if err := uc.validateAuthorID(req.AuthorID); err != nil {
-		return nil, err
+	if authorValidationErr := uc.validateAuthorID(req.AuthorID); authorValidationErr != nil {
+		return nil, authorValidationErr
 	}
 
 	post := uc.createPost(req.Content, req.AuthorID)
 
-	if err := uc.validatePostContent(post); err != nil {
-		return nil, err
+	if contentValidationErr := uc.validatePostContent(post); contentValidationErr != nil {
+		return nil, contentValidationErr
 	}
 
 	post.ID = uuid.New().String()
 	post.CreatedAt = time.Now()
 
-	if err := uc.savePost(post); err != nil {
-		return nil, err
+	if saveErr := uc.savePost(post); saveErr != nil {
+		return nil, saveErr
 	}
 
 	return &CreatePostOutput{

@@ -32,17 +32,17 @@ func (uc *ValidateTokenUseCase) validateTokenString(token string) error {
 }
 
 func (uc *ValidateTokenUseCase) Execute(req ValidateTokenInput) (*ValidateTokenOutput, error) {
-	if err := uc.validateTokenString(req.TokenString); err != nil {
-		return nil, err
+	if tokenValidationErr := uc.validateTokenString(req.TokenString); tokenValidationErr != nil {
+		return nil, tokenValidationErr
 	}
 
-	payload, validationErr := uc.service.Validate(req.TokenString)
-	if validationErr != nil {
-		return nil, validationErr
+	payload, serviceValidationErr := uc.service.Validate(req.TokenString)
+	if serviceValidationErr != nil {
+		return nil, serviceValidationErr
 	}
 
-	if err := payload.Validate(); err != nil {
-		return nil, err
+	if payloadValidationErr := payload.Validate(); payloadValidationErr != nil {
+		return nil, payloadValidationErr
 	}
 
 	return &ValidateTokenOutput{Subject: payload.Subject}, nil

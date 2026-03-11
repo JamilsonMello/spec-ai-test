@@ -41,8 +41,8 @@ func (jWTValidatorService *JWTValidatorService) Validate(token string) (*domain.
 		payloadStr += strings.Repeat("=", 4-pad)
 	}
 
-	payloadBytes, err := base64.URLEncoding.DecodeString(payloadStr)
-	if err != nil {
+	payloadBytes, decodeErr := base64.URLEncoding.DecodeString(payloadStr)
+	if decodeErr != nil {
 		return nil, domain.ErrInvalidToken
 	}
 
@@ -51,7 +51,7 @@ func (jWTValidatorService *JWTValidatorService) Validate(token string) (*domain.
 		Exp int64  `json:"exp"`
 	}
 
-	if err := json.Unmarshal(payloadBytes, &claims); err != nil {
+	if unmarshalErr := json.Unmarshal(payloadBytes, &claims); unmarshalErr != nil {
 		return nil, domain.ErrInvalidToken
 	}
 

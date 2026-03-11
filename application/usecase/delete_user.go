@@ -30,7 +30,7 @@ func (uc *DeleteUserUseCase) Execute(userID string, userRole string) error {
 		return ErrUnauthorizedRole
 	}
 
-	if _, err := uuid.Parse(userID); err != nil {
+	if _, uuidParseErr := uuid.Parse(userID); uuidParseErr != nil {
 		return ErrInvalidUserID
 	}
 
@@ -42,8 +42,8 @@ func (uc *DeleteUserUseCase) Execute(userID string, userRole string) error {
 		return ErrUserNotFound
 	}
 
-	if err := uc.UserRepository.DeleteUser(userID); err != nil {
-		return err
+	if deleteErr := uc.UserRepository.DeleteUser(userID); deleteErr != nil {
+		return deleteErr
 	}
 
 	return nil

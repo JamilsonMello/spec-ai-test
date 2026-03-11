@@ -44,13 +44,13 @@ func (passwordRecoveryRepository *PasswordRecoveryRepository) GetPasswordRecover
 
 func (passwordRecoveryRepository *PasswordRecoveryRepository) UpdatePasswordRecovery(recovery *domain.PasswordRecovery) error {
 	query := `UPDATE password_recoveries SET used=$1 WHERE token=$2`
-	result, err := passwordRecoveryRepository.db.Exec(query, recovery.Used, recovery.Token)
-	if err != nil {
-		return fmt.Errorf("failed to update password recovery: %w", err)
+	result, dbErr := passwordRecoveryRepository.db.Exec(query, recovery.Used, recovery.Token)
+	if dbErr != nil {
+		return fmt.Errorf("failed to update password recovery: %w", dbErr)
 	}
-	affected, err := result.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("failed to check rows affected: %w", err)
+	affected, rowsErr := result.RowsAffected()
+	if rowsErr != nil {
+		return fmt.Errorf("failed to check rows affected: %w", rowsErr)
 	}
 	if affected == 0 {
 		return domain.ErrRecoveryTokenNotFound

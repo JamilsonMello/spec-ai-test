@@ -116,25 +116,25 @@ func (uc *RegisterUserUseCase) mapUserToOutput(user *domain.User) *RegisterUserO
 }
 
 func (uc *RegisterUserUseCase) Execute(req RegisterUserInput) (*RegisterUserOutput, error) {
-	birthDate, err := uc.parseBirthDate(req.BirthDate)
-	if err != nil {
-		return nil, err
+	birthDate, birthDateParseErr := uc.parseBirthDate(req.BirthDate)
+	if birthDateParseErr != nil {
+		return nil, birthDateParseErr
 	}
 
 	user := uc.createUser(req, birthDate)
 
-	if err := uc.validateUserInput(user); err != nil {
-		return nil, err
+	if validationErr := uc.validateUserInput(user); validationErr != nil {
+		return nil, validationErr
 	}
 
-	if err := uc.checkEmailUniqueness(user.Email); err != nil {
-		return nil, err
+	if emailCheckErr := uc.checkEmailUniqueness(user.Email); emailCheckErr != nil {
+		return nil, emailCheckErr
 	}
 
 	uc.assignUserID(user)
 
-	if err := uc.saveUserToRepo(user); err != nil {
-		return nil, err
+	if saveErr := uc.saveUserToRepo(user); saveErr != nil {
+		return nil, saveErr
 	}
 
 	return uc.mapUserToOutput(user), nil

@@ -92,31 +92,31 @@ func (uc *ResetPasswordUseCase) markRecoveryUsed(recovery *domain.PasswordRecove
 
 func (uc *ResetPasswordUseCase) Execute(req ResetPasswordInput) (*ResetPasswordOutput, error) {
 
-	if err := uc.validatePasswords(req.NewPassword, req.ConfirmPassword); err != nil {
-		return nil, err
+	if passwordValidationErr := uc.validatePasswords(req.NewPassword, req.ConfirmPassword); passwordValidationErr != nil {
+		return nil, passwordValidationErr
 	}
 
-	recovery, err := uc.validateRecoveryToken(req.Token)
-	if err != nil {
-		return nil, err
+	recovery, tokenValidationErr := uc.validateRecoveryToken(req.Token)
+	if tokenValidationErr != nil {
+		return nil, tokenValidationErr
 	}
 
-	user, err := uc.getUserByRecovery(recovery)
-	if err != nil {
-		return nil, err
+	user, userRetrievalErr := uc.getUserByRecovery(recovery)
+	if userRetrievalErr != nil {
+		return nil, userRetrievalErr
 	}
 
-	hashedPassword, err := uc.hashPassword(req.NewPassword)
-	if err != nil {
-		return nil, err
+	hashedPassword, hashErr := uc.hashPassword(req.NewPassword)
+	if hashErr != nil {
+		return nil, hashErr
 	}
 
-	if err := uc.updateUserPassword(user, hashedPassword); err != nil {
-		return nil, err
+	if passwordUpdateErr := uc.updateUserPassword(user, hashedPassword); passwordUpdateErr != nil {
+		return nil, passwordUpdateErr
 	}
 
-	if err := uc.markRecoveryUsed(recovery); err != nil {
-		return nil, err
+	if recoveryUpdateErr := uc.markRecoveryUsed(recovery); recoveryUpdateErr != nil {
+		return nil, recoveryUpdateErr
 	}
 
 	return &ResetPasswordOutput{

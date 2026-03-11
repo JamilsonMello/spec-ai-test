@@ -68,13 +68,13 @@ func (userRepository *UserRepository) GetUserByID(id string) (*domain.User, erro
 func (userRepository *UserRepository) UpdateUser(user *domain.User) error {
 	query := `UPDATE users SET name=$1, surname=$2, email=$3, birth_date=$4, password=$5, recovery_token=$6, role=$7
 		WHERE id=$8`
-	result, err := userRepository.db.Exec(query, user.Name, user.Surname, user.Email, user.BirthDate, user.Password, user.RecoveryToken, user.Role, user.ID)
-	if err != nil {
-		return fmt.Errorf("failed to update user: %w", err)
+	result, dbErr := userRepository.db.Exec(query, user.Name, user.Surname, user.Email, user.BirthDate, user.Password, user.RecoveryToken, user.Role, user.ID)
+	if dbErr != nil {
+		return fmt.Errorf("failed to update user: %w", dbErr)
 	}
-	affected, err := result.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("failed to check rows affected: %w", err)
+	affected, rowsErr := result.RowsAffected()
+	if rowsErr != nil {
+		return fmt.Errorf("failed to check rows affected: %w", rowsErr)
 	}
 	if affected == 0 {
 		return domain.ErrUserNotFound
@@ -83,13 +83,13 @@ func (userRepository *UserRepository) UpdateUser(user *domain.User) error {
 }
 
 func (userRepository *UserRepository) DeleteUser(id string) error {
-	result, err := userRepository.db.Exec(`DELETE FROM users WHERE id=$1`, id)
-	if err != nil {
-		return fmt.Errorf("failed to delete user: %w", err)
+	result, dbErr := userRepository.db.Exec(`DELETE FROM users WHERE id=$1`, id)
+	if dbErr != nil {
+		return fmt.Errorf("failed to delete user: %w", dbErr)
 	}
-	affected, err := result.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("failed to check rows affected: %w", err)
+	affected, rowsErr := result.RowsAffected()
+	if rowsErr != nil {
+		return fmt.Errorf("failed to check rows affected: %w", rowsErr)
 	}
 	if affected == 0 {
 		return domain.ErrUserNotFound
@@ -114,8 +114,8 @@ func (userRepository *UserRepository) ListUsers(filter domain.UserFilter, page i
 	}
 
 	var total int
-	if err := userRepository.db.QueryRow("SELECT COUNT(*) FROM users "+where, args...).Scan(&total); err != nil {
-		return nil, 0, fmt.Errorf("failed to count users: %w", err)
+	if countErr := userRepository.db.QueryRow("SELECT COUNT(*) FROM users "+where, args...).Scan(&total); countErr != nil {
+		return nil, 0, fmt.Errorf("failed to count users: %w", countErr)
 	}
 
 	listArgs := append(args, limit, (page-1)*limit)
@@ -125,25 +125,25 @@ func (userRepository *UserRepository) ListUsers(filter domain.UserFilter, page i
 		where, idx, idx+1,
 	)
 
-	rows, err := userRepository.db.Query(listQuery, listArgs...)
-	if err != nil {
-		return nil, 0, fmt.Errorf("failed to list users: %w", err)
+	rows, queryErr := userRepository.db.Query(listQuery, listArgs...)
+	if queryErr != nil {
+		return nil, 0, fmt.Errorf("failed to list users: %w", queryErr)
 	}
 	defer rows.Close()
 
 	users := []*domain.User{}
 	for rows.Next() {
 		user := &domain.User{}
-		if err := rows.Scan(
+		if scanErr := rows.Scan(
 			&user.ID, &user.Name, &user.Surname, &user.Email,
 			&user.BirthDate, &user.Password, &user.RecoveryToken, &user.Role, &user.CreatedAt,
-		); err != nil {
-			return nil, 0, fmt.Errorf("failed to scan user: %w", err)
+		); scanErr != nil {
+			return nil, 0, fmt.Errorf("failed to scan user: %w", scanErr)
 		}
 		users = append(users, user)
 	}
-	if err := rows.Err(); err != nil {
-		return nil, 0, fmt.Errorf("failed to iterate users: %w", err)
+	if rowsErr := rows.Err(); rowsErr != nil {
+		return nil, 0, fmt.Errorf("failed to iterate users: %w", rowsErr)
 	}
 	return users, total, nil
 }
