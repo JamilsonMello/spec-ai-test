@@ -37,11 +37,12 @@ func main() {
 	requestPasswordRecoveryUC := usecase.NewRequestPasswordRecoveryUseCase(userRepo, passwordRecoveryRepo, emailService)
 	resetPasswordUC := usecase.NewResetPasswordUseCase(userRepo, passwordRecoveryRepo)
 	createPostUC := usecase.NewCreatePostUseCase(postRepo)
+	updatePostUC := usecase.NewUpdatePostUseCase(postRepo)
 	validateTokenUC := usecase.NewValidateTokenUseCase(jwtValidatorService)
 
 	userHandler := handler.NewUserHandler(registerUserUC, listUsersUC, updateUserProfileUC, deleteUserUC)
 	passwordRecoveryHandler := handler.NewPasswordRecoveryHandler(requestPasswordRecoveryUC, resetPasswordUC)
-	postHandler := handler.NewPostHandler(createPostUC)
+	postHandler := handler.NewPostHandler(createPostUC, updatePostUC)
 
 	e := echo.New()
 
@@ -56,6 +57,7 @@ func main() {
 	protected.DELETE("/usuarios/:id", userHandler.DeleteUser)
 	protected.PUT("/usuarios/:id", userHandler.UpdateUserProfile)
 	protected.POST("/posts", postHandler.CreatePost)
+	protected.PUT("/posts/:id", postHandler.UpdatePost)
 
 	port := ":8080"
 	log.Printf("Server listening on port %s\n", port)
