@@ -9,35 +9,31 @@ import (
 	"github.com/example/cadastro-de-usuarios/application/usecase"
 )
 
-// PostHandler handles HTTP requests related to posts.
 type PostHandler struct {
 	CreatePostUseCase *usecase.CreatePostUseCase
 }
 
-// NewPostHandler creates a new PostHandler.
 func NewPostHandler(createPostUC *usecase.CreatePostUseCase) *PostHandler {
 	return &PostHandler{
 		CreatePostUseCase: createPostUC,
 	}
 }
 
-// CreatePost handles the POST /posts request.
-func (h *PostHandler) CreatePost(c echo.Context) error {
-	// Extract authenticated user ID from header
+func (postHandler *PostHandler) CreatePost(c echo.Context) error {
+
 	userID := c.Request().Header.Get("X-User-ID")
 	if userID == "" {
 		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Unauthorized"})
 	}
 
-	var req usecase.CreatePostRequest
+	var req usecase.CreatePostInput
 	if err := c.Bind(&req); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request payload"})
 	}
 
-	// Set author ID from authentication context
 	req.AuthorID = userID
 
-	resp, err := h.CreatePostUseCase.Execute(req)
+	resp, err := postHandler.CreatePostUseCase.Execute(req)
 	if err != nil {
 		if errors.Is(err, usecase.ErrInvalidContent) {
 			return c.JSON(http.StatusUnprocessableEntity, map[string]string{"error": err.Error()})

@@ -15,21 +15,21 @@ func NewPasswordRecoveryRepository(db *sql.DB) *PasswordRecoveryRepository {
 	return &PasswordRecoveryRepository{db: db}
 }
 
-func (r *PasswordRecoveryRepository) SavePasswordRecovery(recovery *domain.PasswordRecovery) error {
+func (passwordRecoveryRepository *PasswordRecoveryRepository) SavePasswordRecovery(recovery *domain.PasswordRecovery) error {
 	query := `INSERT INTO password_recoveries (id, token, user_id, expires_at, used, created_at)
 		VALUES ($1, $2, $3, $4, $5, $6)`
-	_, err := r.db.Exec(query, recovery.ID, recovery.Token, recovery.UserID, recovery.ExpiresAt, recovery.Used, recovery.CreatedAt)
+	_, err := passwordRecoveryRepository.db.Exec(query, recovery.ID, recovery.Token, recovery.UserID, recovery.ExpiresAt, recovery.Used, recovery.CreatedAt)
 	if err != nil {
 		return fmt.Errorf("failed to save password recovery: %w", err)
 	}
 	return nil
 }
 
-func (r *PasswordRecoveryRepository) GetPasswordRecoveryByToken(token string) (*domain.PasswordRecovery, error) {
+func (passwordRecoveryRepository *PasswordRecoveryRepository) GetPasswordRecoveryByToken(token string) (*domain.PasswordRecovery, error) {
 	query := `SELECT id, token, user_id, expires_at, used, created_at
 		FROM password_recoveries WHERE token = $1`
 	recovery := &domain.PasswordRecovery{}
-	err := r.db.QueryRow(query, token).Scan(
+	err := passwordRecoveryRepository.db.QueryRow(query, token).Scan(
 		&recovery.ID, &recovery.Token, &recovery.UserID,
 		&recovery.ExpiresAt, &recovery.Used, &recovery.CreatedAt,
 	)
@@ -42,9 +42,9 @@ func (r *PasswordRecoveryRepository) GetPasswordRecoveryByToken(token string) (*
 	return recovery, nil
 }
 
-func (r *PasswordRecoveryRepository) UpdatePasswordRecovery(recovery *domain.PasswordRecovery) error {
+func (passwordRecoveryRepository *PasswordRecoveryRepository) UpdatePasswordRecovery(recovery *domain.PasswordRecovery) error {
 	query := `UPDATE password_recoveries SET used=$1 WHERE token=$2`
-	result, err := r.db.Exec(query, recovery.Used, recovery.Token)
+	result, err := passwordRecoveryRepository.db.Exec(query, recovery.Used, recovery.Token)
 	if err != nil {
 		return fmt.Errorf("failed to update password recovery: %w", err)
 	}

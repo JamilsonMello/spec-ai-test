@@ -12,27 +12,23 @@ import (
 	"github.com/example/cadastro-de-usuarios/domain"
 )
 
-// JWTValidatorService validates a JWT token using HS256
 type JWTValidatorService struct {
 	secret string
 }
 
-// NewJWTValidatorService creates a new JWTValidatorService with the secret from environment
 func NewJWTValidatorService() *JWTValidatorService {
 	secret := os.Getenv("JWT_SECRET")
 	return &JWTValidatorService{secret: secret}
 }
 
-// Validate decodes the JWT token, checks the signature, and verifies the expiration time
-func (s *JWTValidatorService) Validate(token string) (*domain.TokenPayload, error) {
+func (jWTValidatorService *JWTValidatorService) Validate(token string) (*domain.TokenPayload, error) {
 	parts := strings.Split(token, ".")
 	if len(parts) != 3 {
 		return nil, domain.ErrInvalidToken
 	}
 
-	// Calculate and verify signature
 	message := parts[0] + "." + parts[1]
-	mac := hmac.New(sha256.New, []byte(s.secret))
+	mac := hmac.New(sha256.New, []byte(jWTValidatorService.secret))
 	mac.Write([]byte(message))
 	expectedSignature := base64.RawURLEncoding.EncodeToString(mac.Sum(nil))
 
@@ -40,7 +36,6 @@ func (s *JWTValidatorService) Validate(token string) (*domain.TokenPayload, erro
 		return nil, domain.ErrInvalidToken
 	}
 
-	// Decode payload (allow for both RawURLEncoding and URLEncoding with padding by standardizing it)
 	payloadStr := parts[1]
 	if pad := len(payloadStr) % 4; pad != 0 {
 		payloadStr += strings.Repeat("=", 4-pad)
@@ -60,7 +55,6 @@ func (s *JWTValidatorService) Validate(token string) (*domain.TokenPayload, erro
 		return nil, domain.ErrInvalidToken
 	}
 
-	// Check expiration
 	if time.Now().Unix() >= claims.Exp {
 		return nil, domain.ErrTokenExpired
 	}

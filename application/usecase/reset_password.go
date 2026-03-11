@@ -7,32 +7,27 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// Custom errors for password reset
 var (
 	ErrInvalidToken     = errors.New("token inválido ou expirado")
 	ErrPasswordMismatch = errors.New("senha e confirmação não conferem")
 	ErrPasswordTooShort = errors.New("senha deve ter no mínimo 8 caracteres")
 )
 
-// ResetPasswordRequest is the DTO for password reset input.
-type ResetPasswordRequest struct {
+type ResetPasswordInput struct {
 	Token           string `json:"token"`
 	NewPassword     string `json:"newPassword"`
 	ConfirmPassword string `json:"confirmPassword"`
 }
 
-// ResetPasswordResponse is the DTO for password reset output.
-type ResetPasswordResponse struct {
+type ResetPasswordOutput struct {
 	Message string `json:"message"`
 }
 
-// ResetPasswordUseCase handles the business logic for password reset.
 type ResetPasswordUseCase struct {
 	UserRepository             domain.UserRepository
 	PasswordRecoveryRepository domain.PasswordRecoveryRepository
 }
 
-// NewResetPasswordUseCase creates a new ResetPasswordUseCase.
 func NewResetPasswordUseCase(userRepo domain.UserRepository, recoveryRepo domain.PasswordRecoveryRepository) *ResetPasswordUseCase {
 	return &ResetPasswordUseCase{
 		UserRepository:             userRepo,
@@ -40,56 +35,91 @@ func NewResetPasswordUseCase(userRepo domain.UserRepository, recoveryRepo domain
 	}
 }
 
-// Execute performs the password reset process.
-func (uc *ResetPasswordUseCase) Execute(req ResetPasswordRequest) (*ResetPasswordResponse, error) {
-	// 1. Validate passwords match
-	if req.NewPassword != req.ConfirmPassword {
-		return nil, ErrPasswordMismatch
+func (uc *ResetPasswordUseCase) validatePasswords(newPassword, confirmPassword string) error {
+	if newPassword != confirmPassword {
+		return ErrPasswordMismatch
 	}
-
-	// 2. Validate password strength
-	if len(req.NewPassword) < 8 {
-		return nil, ErrPasswordTooShort
+	if len(newPassword) < 8 {
+		return ErrPasswordTooShort
 	}
+	return nil
+}
 
-	// 3. Retrieve recovery token
-	recovery, err := uc.PasswordRecoveryRepository.GetPasswordRecoveryByToken(req.Token)
-	if err != nil {
+func (uc *ResetPasswordUseCase) validateRecoveryToken(token string) (*domain.PasswordRecovery, error) {
+	recovery, repositoryErr := uc.PasswordRecoveryRepository.GetPasswordRecoveryByToken(token)
+	if repositoryErr != nil {
 		return nil, ErrInvalidToken
 	}
-
-	// 4. Validate token is still valid
 	if !recovery.IsValid() {
 		return nil, ErrInvalidToken
 	}
+	return recovery, nil
+}
 
-	// 5. Retrieve user
-	user, err := uc.UserRepository.GetUserByID(recovery.UserID)
-	if err != nil {
+func (uc *ResetPasswordUseCase) getUserByRecovery(recovery *domain.PasswordRecovery) (*domain.User, error) {
+	user, repositoryErr := uc.UserRepository.GetUserByID(recovery.UserID)
+	if repositoryErr != nil {
 		return nil, ErrUserNotFound
 	}
+	return user, nil
+}
 
-	// 6. Hash new password
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
-	if err != nil {
-		return nil, err
+func (uc *ResetPasswordUseCase) hashPassword(password string) (string, error) {
+	hashedPassword, hashErr := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if hashErr != nil {
+		return "", hashErr
 	}
+	return string(hashedPassword), nil
+}
 
-	// 7. Update user password
-	user.Password = string(hashedPassword)
-	err = uc.UserRepository.UpdateUser(user)
-	if err != nil {
-		return nil, err
+func (uc *ResetPasswordUseCase) updateUserPassword(user *domain.User, hashedPassword string) error {
+	user.Password = hashedPassword
+	updateErr := uc.UserRepository.UpdateUser(user)
+	if updateErr != nil {
+		return updateErr
 	}
+	return nil
+}
 
-	// 8. Mark token as used
+func (uc *ResetPasswordUseCase) markRecoveryUsed(recovery *domain.PasswordRecovery) error {
 	recovery.MarkAsUsed()
-	err = uc.PasswordRecoveryRepository.UpdatePasswordRecovery(recovery)
+	updateErr := uc.PasswordRecoveryRepository.UpdatePasswordRecovery(recovery)
+	if updateErr != nil {
+		return updateErr
+	}
+	return nil
+}
+
+func (uc *ResetPasswordUseCase) Execute(req ResetPasswordInput) (*ResetPasswordOutput, error) {
+
+	if err := uc.validatePasswords(req.NewPassword, req.ConfirmPassword); err != nil {
+		return nil, err
+	}
+
+	recovery, err := uc.validateRecoveryToken(req.Token)
 	if err != nil {
 		return nil, err
 	}
 
-	return &ResetPasswordResponse{
+	user, err := uc.getUserByRecovery(recovery)
+	if err != nil {
+		return nil, err
+	}
+
+	hashedPassword, err := uc.hashPassword(req.NewPassword)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := uc.updateUserPassword(user, hashedPassword); err != nil {
+		return nil, err
+	}
+
+	if err := uc.markRecoveryUsed(recovery); err != nil {
+		return nil, err
+	}
+
+	return &ResetPasswordOutput{
 		Message: "Senha redefinida com sucesso",
 	}, nil
 }
