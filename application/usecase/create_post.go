@@ -11,7 +11,7 @@ import (
 
 // Custom errors for post creation validation
 var (
-	ErrInvalidContent     = errors.New("conteúdo deve ter entre 1 e 600 caracteres")
+	ErrInvalidContent     = errors.New("conteúdo deve ter entre 1 e 5000 caracteres")
 	ErrUnauthorizedCreate = errors.New("usuário não autenticado")
 )
 

@@ -20,6 +20,7 @@ func Connect(dsn string) (*sql.DB, error) {
 	schemas := []string{
 		queries.CreateUsersTableSQL,
 		queries.CreatePostsTableSQL,
+		queries.AddUpdatedAtColumnSQL,
 		queries.CreatePasswordRecoveriesTableSQL,
 	}
 

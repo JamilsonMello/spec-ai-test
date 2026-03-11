@@ -19,6 +19,8 @@ type UserFilter struct {
 // PostRepository defines the contract for post persistence operations.
 type PostRepository interface {
 	SavePost(post *Post) error
+	GetPostByID(id string) (*Post, error)
+	UpdatePost(post *Post) error
 }
 
 // PasswordRecoveryRepository defines the contract for password recovery token persistence.
