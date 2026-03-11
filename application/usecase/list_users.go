@@ -7,16 +7,14 @@ import (
 	"github.com/example/cadastro-de-usuarios/domain"
 )
 
-// ListUsersRequest is the DTO for listing users with filters and pagination.
-type ListUsersRequest struct {
-	Name  string `json:"name"`  // Optional filter by name
-	Email string `json:"email"` // Optional filter by email
-	Page  int    `json:"page"`  // Page number (starts from 1)
-	Limit int    `json:"limit"` // Items per page (default 30, max 30)
+type ListUsersInput struct {
+	Name  string `json:"name"`
+	Email string `json:"email"`
+	Page  int    `json:"page"`
+	Limit int    `json:"limit"`
 }
 
-// UserResponse is the DTO for user data in list responses.
-type UserResponse struct {
+type UserOutput struct {
 	ID        string    `json:"id"`
 	Name      string    `json:"name"`
 	Surname   string    `json:"surname"`
@@ -26,54 +24,44 @@ type UserResponse struct {
 	CreatedAt time.Time `json:"createdAt"`
 }
 
-// ListUsersResponse is the DTO for listing users output.
-type ListUsersResponse struct {
-	Users      []UserResponse `json:"users"`
-	TotalCount int            `json:"totalCount"`
-	Page       int            `json:"page"`
-	Limit      int            `json:"limit"`
+type ListUsersOutput struct {
+	Users      []UserOutput `json:"users"`
+	TotalCount int          `json:"totalCount"`
+	Page       int          `json:"page"`
+	Limit      int          `json:"limit"`
 }
 
-// ListUsersUseCase handles the business logic for listing users.
 type ListUsersUseCase struct {
 	UserRepository domain.UserRepository
 }
 
-// NewListUsersUseCase creates a new ListUsersUseCase.
 func NewListUsersUseCase(repo domain.UserRepository) *ListUsersUseCase {
 	return &ListUsersUseCase{
 		UserRepository: repo,
 	}
 }
 
-// Execute performs the user listing process with filters and pagination.
-func (uc *ListUsersUseCase) Execute(req ListUsersRequest) (*ListUsersResponse, error) {
-	// Set default limit to 30 if not provided or exceeds max
-	if req.Limit <= 0 || req.Limit > 30 {
-		req.Limit = 30
+func (uc *ListUsersUseCase) validatePagination(limit int, page int) (int, int) {
+	if limit <= 0 || limit > 30 {
+		limit = 30
 	}
-
-	// Set default page to 1 if not provided
-	if req.Page <= 0 {
-		req.Page = 1
+	if page <= 0 {
+		page = 1
 	}
+	return limit, page
+}
 
-	// Build filter criteria
-	filter := domain.UserFilter{
-		Name:  strings.ToLower(strings.TrimSpace(req.Name)),
-		Email: strings.ToLower(strings.TrimSpace(req.Email)),
+func (uc *ListUsersUseCase) buildFilter(name, email string) domain.UserFilter {
+	return domain.UserFilter{
+		Name:  strings.ToLower(strings.TrimSpace(name)),
+		Email: strings.ToLower(strings.TrimSpace(email)),
 	}
+}
 
-	// Retrieve users from repository with filters
-	users, totalCount, err := uc.UserRepository.ListUsers(filter, req.Page, req.Limit)
-	if err != nil {
-		return nil, err
-	}
-
-	// Convert domain users to response DTOs (excluding sensitive fields)
-	userResponses := make([]UserResponse, 0, len(users))
+func (uc *ListUsersUseCase) mapUsersToOutput(users []*domain.User) []UserOutput {
+	userResponses := make([]UserOutput, 0, len(users))
 	for _, user := range users {
-		userResponses = append(userResponses, UserResponse{
+		userResponses = append(userResponses, UserOutput{
 			ID:        user.ID,
 			Name:      user.Name,
 			Surname:   user.Surname,
@@ -83,8 +71,23 @@ func (uc *ListUsersUseCase) Execute(req ListUsersRequest) (*ListUsersResponse, e
 			CreatedAt: user.CreatedAt,
 		})
 	}
+	return userResponses
+}
 
-	return &ListUsersResponse{
+func (uc *ListUsersUseCase) Execute(req ListUsersInput) (*ListUsersOutput, error) {
+
+	req.Limit, req.Page = uc.validatePagination(req.Limit, req.Page)
+
+	filter := uc.buildFilter(req.Name, req.Email)
+
+	users, totalCount, repositoryErr := uc.UserRepository.ListUsers(filter, req.Page, req.Limit)
+	if repositoryErr != nil {
+		return nil, repositoryErr
+	}
+
+	userResponses := uc.mapUsersToOutput(users)
+
+	return &ListUsersOutput{
 		Users:      userResponses,
 		TotalCount: totalCount,
 		Page:       req.Page,

@@ -15,9 +15,9 @@ func NewPostRepository(db *sql.DB) *PostRepository {
 	return &PostRepository{db: db}
 }
 
-func (r *PostRepository) SavePost(post *domain.Post) error {
+func (postRepository *PostRepository) SavePost(post *domain.Post) error {
 	query := `INSERT INTO posts (id, content, author_id, created_at) VALUES ($1, $2, $3, $4)`
-	_, err := r.db.Exec(query, post.ID, post.Content, post.AuthorID, post.CreatedAt)
+	_, err := postRepository.db.Exec(query, post.ID, post.Content, post.AuthorID, post.CreatedAt)
 	if err != nil {
 		return fmt.Errorf("failed to save post: %w", err)
 	}

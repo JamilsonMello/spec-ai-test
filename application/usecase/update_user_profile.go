@@ -7,7 +7,6 @@ import (
 	"github.com/example/cadastro-de-usuarios/domain"
 )
 
-// Custom errors for update user profile validation
 var (
 	ErrInvalidNameUpdate      = errors.New("nome deve ter entre 2 e 50 caracteres e conter apenas letras e espaços")
 	ErrInvalidBirthDateUpdate = errors.New("data de nascimento inválida")
@@ -15,73 +14,92 @@ var (
 	ErrUserNotFoundUpdate     = errors.New("usuário não encontrado")
 )
 
-// UpdateUserProfileRequest is the DTO for user profile update input.
-type UpdateUserProfileRequest struct {
+type UpdateUserProfileInput struct {
 	UserID    string `param:"id"`
 	Name      string `json:"name"`
-	BirthDate string `json:"birthDate"` // YYYY-MM-DD
+	BirthDate string `json:"birthDate"`
 }
 
-// UpdateUserProfileResponse is the DTO for user profile update output.
-type UpdateUserProfileResponse struct {
+type UpdateUserProfileOutput struct {
 	ID        string `json:"id"`
 	Name      string `json:"name"`
 	Email     string `json:"email"`
 	BirthDate string `json:"birthDate"`
 }
 
-// UpdateUserProfileUseCase handles the business logic for updating user profile.
 type UpdateUserProfileUseCase struct {
 	UserRepository domain.UserRepository
 }
 
-// NewUpdateUserProfileUseCase creates a new UpdateUserProfileUseCase.
 func NewUpdateUserProfileUseCase(repo domain.UserRepository) *UpdateUserProfileUseCase {
 	return &UpdateUserProfileUseCase{
 		UserRepository: repo,
 	}
 }
 
-// Execute performs the user profile update process.
-func (uc *UpdateUserProfileUseCase) Execute(req UpdateUserProfileRequest) (*UpdateUserProfileResponse, error) {
-	// 1. Validate user ID
-	if req.UserID == "" {
-		return nil, ErrUserNotFoundUpdate
+func (uc *UpdateUserProfileUseCase) validateUserID(userID string) error {
+	if userID == "" {
+		return ErrUserNotFoundUpdate
 	}
+	return nil
+}
 
-	// 2. Get existing user
-	user, err := uc.UserRepository.GetUserByID(req.UserID)
-	if err != nil {
-		return nil, ErrUserNotFoundUpdate
+func (uc *UpdateUserProfileUseCase) parseBirthDate(birthDateStr string) (time.Time, error) {
+	birthDate, parseErr := time.Parse("2006-01-02", birthDateStr)
+	if parseErr != nil {
+		return time.Time{}, ErrInvalidBirthDateUpdate
 	}
+	return birthDate, nil
+}
 
-	// 3. Parse and validate BirthDate
-	birthDate, err := time.Parse("2006-01-02", req.BirthDate)
-	if err != nil {
-		return nil, ErrInvalidBirthDateUpdate
-	}
-
-	// 4. Update user fields
-	user.Name = req.Name
+func (uc *UpdateUserProfileUseCase) updateUserFields(user *domain.User, name string, birthDate time.Time) error {
+	user.Name = name
 	user.BirthDate = birthDate
 
-	// 5. Validate user fields using domain methods
 	if !user.IsValidName() {
-		return nil, ErrInvalidNameUpdate
+		return ErrInvalidNameUpdate
 	}
 
 	if !user.IsPastDate() {
-		return nil, ErrFutureBirthDateUpdate
+		return ErrFutureBirthDateUpdate
 	}
 
-	// 6. Save updated user
-	err = uc.UserRepository.UpdateUser(user)
-	if err != nil {
-		return nil, err
+	return nil
+}
+
+func (uc *UpdateUserProfileUseCase) saveUser(user *domain.User) error {
+	updateErr := uc.UserRepository.UpdateUser(user)
+	if updateErr != nil {
+		return updateErr
+	}
+	return nil
+}
+
+func (uc *UpdateUserProfileUseCase) Execute(req UpdateUserProfileInput) (*UpdateUserProfileOutput, error) {
+
+	if userIDValidationErr := uc.validateUserID(req.UserID); userIDValidationErr != nil {
+		return nil, userIDValidationErr
 	}
 
-	// 7. Return response
-	return &UpdateUserProfileResponse{
+	user, repositoryErr := uc.UserRepository.GetUserByID(req.UserID)
+	if repositoryErr != nil {
+		return nil, ErrUserNotFoundUpdate
+	}
+
+	birthDate, parseErr := uc.parseBirthDate(req.BirthDate)
+	if parseErr != nil {
+		return nil, parseErr
+	}
+
+	if fieldUpdateErr := uc.updateUserFields(user, req.Name, birthDate); fieldUpdateErr != nil {
+		return nil, fieldUpdateErr
+	}
+
+	if saveErr := uc.saveUser(user); saveErr != nil {
+		return nil, saveErr
+	}
+
+	return &UpdateUserProfileOutput{
 		ID:        user.ID,
 		Name:      user.Name,
 		Email:     user.Email,

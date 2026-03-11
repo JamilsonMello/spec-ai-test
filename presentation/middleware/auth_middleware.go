@@ -8,7 +8,6 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-// AuthMiddleware creates a new authentication middleware
 func AuthMiddleware(validateUC *usecase.ValidateTokenUseCase) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
@@ -19,12 +18,11 @@ func AuthMiddleware(validateUC *usecase.ValidateTokenUseCase) echo.MiddlewareFun
 
 			token := strings.TrimPrefix(authHeader, "Bearer ")
 
-			resp, err := validateUC.Execute(usecase.ValidateTokenRequest{TokenString: token})
+			resp, err := validateUC.Execute(usecase.ValidateTokenInput{TokenString: token})
 			if err != nil {
 				return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Unauthorized access"})
 			}
 
-			// Store user information in context for subsequent handlers
 			c.Set("user_id", resp.Subject)
 
 			return next(c)

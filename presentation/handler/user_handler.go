@@ -11,7 +11,6 @@ import (
 	"github.com/example/cadastro-de-usuarios/domain"
 )
 
-// UserHandler handles HTTP requests related to users.
 type UserHandler struct {
 	RegisterUserUseCase      *usecase.RegisterUserUseCase
 	ListUsersUseCase         *usecase.ListUsersUseCase
@@ -19,7 +18,6 @@ type UserHandler struct {
 	DeleteUserUseCase        *usecase.DeleteUserUseCase
 }
 
-// NewUserHandler creates a new UserHandler.
 func NewUserHandler(registerUC *usecase.RegisterUserUseCase, listUC *usecase.ListUsersUseCase, updateProfileUC *usecase.UpdateUserProfileUseCase, deleteUC *usecase.DeleteUserUseCase) *UserHandler {
 	return &UserHandler{
 		RegisterUserUseCase:      registerUC,
@@ -29,14 +27,44 @@ func NewUserHandler(registerUC *usecase.RegisterUserUseCase, listUC *usecase.Lis
 	}
 }
 
-// RegisterUser handles the POST /usuarios request.
-func (h *UserHandler) RegisterUser(c echo.Context) error {
-	var req usecase.RegisterUserRequest
+func (userHandler *UserHandler) getRole(c echo.Context) string {
+	role := c.Request().Header.Get("X-User-Role")
+	if role == "" {
+		role = c.QueryParam("role")
+	}
+	return role
+}
+
+func parsePage(c echo.Context) int {
+	page := 1
+	if pageStr := c.QueryParam("page"); pageStr != "" {
+		if parsedPage, err := strconv.Atoi(pageStr); err == nil && parsedPage > 0 {
+			page = parsedPage
+		}
+	}
+	return page
+}
+
+func parseLimit(c echo.Context) int {
+	limit := 30
+	if limitStr := c.QueryParam("limit"); limitStr != "" {
+		if parsedLimit, err := strconv.Atoi(limitStr); err == nil && parsedLimit > 0 {
+			limit = parsedLimit
+			if limit > 30 {
+				limit = 30
+			}
+		}
+	}
+	return limit
+}
+
+func (userHandler *UserHandler) RegisterUser(c echo.Context) error {
+	var req usecase.RegisterUserInput
 	if err := c.Bind(&req); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request payload"})
 	}
 
-	resp, err := h.RegisterUserUseCase.Execute(req)
+	resp, err := userHandler.RegisterUserUseCase.Execute(req)
 	if err != nil {
 		if errors.Is(err, usecase.ErrInvalidName) ||
 			errors.Is(err, usecase.ErrInvalidSurname) ||
@@ -54,50 +82,19 @@ func (h *UserHandler) RegisterUser(c echo.Context) error {
 	return c.JSON(http.StatusOK, resp)
 }
 
-// ListUsers handles the GET /usuarios/listar request.
-// This endpoint requires admin role for access.
-func (h *UserHandler) ListUsers(c echo.Context) error {
-	// Check for admin role (basic auth check via header or query param for demo)
-	// In production, this should use proper JWT/session validation
-	userRole := c.Request().Header.Get("X-User-Role")
-	if userRole == "" {
-		userRole = c.QueryParam("role")
-	}
-
-	// Only allow admin users to access this endpoint
-	if userRole != "admin" {
+func (userHandler *UserHandler) ListUsers(c echo.Context) error {
+	if userHandler.getRole(c) != "admin" {
 		return c.JSON(http.StatusForbidden, map[string]string{"error": "Access denied. Admin role required."})
 	}
 
-	// Parse query parameters
-	req := usecase.ListUsersRequest{
+	req := usecase.ListUsersInput{
 		Name:  c.QueryParam("name"),
 		Email: c.QueryParam("email"),
+		Page:  parsePage(c),
+		Limit: parseLimit(c),
 	}
 
-	// Parse page (default to 1)
-	page := 1
-	if pageStr := c.QueryParam("page"); pageStr != "" {
-		if parsedPage, err := strconv.Atoi(pageStr); err == nil && parsedPage > 0 {
-			page = parsedPage
-		}
-	}
-	req.Page = page
-
-	// Parse limit (default to 30, max 30)
-	limit := 30
-	if limitStr := c.QueryParam("limit"); limitStr != "" {
-		if parsedLimit, err := strconv.Atoi(limitStr); err == nil && parsedLimit > 0 {
-			limit = parsedLimit
-			if limit > 30 {
-				limit = 30
-			}
-		}
-	}
-	req.Limit = limit
-
-	// Execute use case
-	resp, err := h.ListUsersUseCase.Execute(req)
+	resp, err := userHandler.ListUsersUseCase.Execute(req)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Internal server error"})
 	}
@@ -105,21 +102,16 @@ func (h *UserHandler) ListUsers(c echo.Context) error {
 	return c.JSON(http.StatusOK, resp)
 }
 
-// DeleteUser handles the DELETE /usuarios/:id request.
-// This endpoint requires admin role for access.
-func (h *UserHandler) DeleteUser(c echo.Context) error {
-	// Check for admin role (basic auth check via header or query param for demo)
-	// In production, this should use proper JWT/session validation
+func (userHandler *UserHandler) DeleteUser(c echo.Context) error {
+
 	userRole := c.Request().Header.Get("X-User-Role")
 	if userRole == "" {
 		userRole = c.QueryParam("role")
 	}
 
-	// Get user ID from path parameter
 	userID := c.Param("id")
 
-	// Execute use case
-	err := h.DeleteUserUseCase.Execute(userID, userRole)
+	err := userHandler.DeleteUserUseCase.Execute(userID, userRole)
 	if err != nil {
 		if errors.Is(err, usecase.ErrInvalidUserID) {
 			return c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
@@ -134,17 +126,15 @@ func (h *UserHandler) DeleteUser(c echo.Context) error {
 	return c.NoContent(http.StatusNoContent)
 }
 
-// UpdateUserProfile handles the PUT /usuarios/:id request.
-func (h *UserHandler) UpdateUserProfile(c echo.Context) error {
-	var req usecase.UpdateUserProfileRequest
+func (userHandler *UserHandler) UpdateUserProfile(c echo.Context) error {
+	var req usecase.UpdateUserProfileInput
 	if err := c.Bind(&req); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request payload"})
 	}
 
-	// Get user ID from path parameter
 	req.UserID = c.Param("id")
 
-	_, err := h.UpdateUserProfileUseCase.Execute(req)
+	_, err := userHandler.UpdateUserProfileUseCase.Execute(req)
 	if err != nil {
 		if errors.Is(err, usecase.ErrInvalidNameUpdate) ||
 			errors.Is(err, usecase.ErrInvalidBirthDateUpdate) ||

@@ -9,68 +9,82 @@ import (
 	"github.com/example/cadastro-de-usuarios/domain"
 )
 
-// Custom errors for post creation validation
 var (
 	ErrInvalidContent     = errors.New("conteúdo deve ter entre 1 e 600 caracteres")
 	ErrUnauthorizedCreate = errors.New("usuário não autenticado")
 )
 
-// CreatePostRequest represents the input data for creating a post.
-type CreatePostRequest struct {
+type CreatePostInput struct {
 	Content  string `json:"content"`
-	AuthorID string `json:"-"` // Set from authentication context
+	AuthorID string `json:"-"`
 }
 
-// CreatePostResponse represents the output data after creating a post.
-type CreatePostResponse struct {
+type CreatePostOutput struct {
 	ID        string `json:"id"`
 	Content   string `json:"content"`
 	AuthorID  string `json:"authorId"`
 	CreatedAt string `json:"createdAt"`
 }
 
-// CreatePostUseCase handles the business logic for post creation.
 type CreatePostUseCase struct {
 	PostRepository domain.PostRepository
 }
 
-// NewCreatePostUseCase creates a new CreatePostUseCase.
 func NewCreatePostUseCase(repo domain.PostRepository) *CreatePostUseCase {
 	return &CreatePostUseCase{
 		PostRepository: repo,
 	}
 }
 
-// Execute performs the post creation process.
-func (uc *CreatePostUseCase) Execute(req CreatePostRequest) (*CreatePostResponse, error) {
-	// 1. Check authentication
-	if req.AuthorID == "" {
-		return nil, ErrUnauthorizedCreate
+func (uc *CreatePostUseCase) validateAuthorID(authorID string) error {
+	if authorID == "" {
+		return ErrUnauthorizedCreate
 	}
+	return nil
+}
 
-	// 2. Create post entity
-	post := &domain.Post{
-		Content:  req.Content,
-		AuthorID: req.AuthorID,
+func (uc *CreatePostUseCase) createPost(content, authorID string) *domain.Post {
+	return &domain.Post{
+		Content:  content,
+		AuthorID: authorID,
 	}
+}
 
-	// 3. Validate content
+func (uc *CreatePostUseCase) validatePostContent(post *domain.Post) error {
 	if !post.IsValidContent() {
-		return nil, ErrInvalidContent
+		return ErrInvalidContent
+	}
+	return nil
+}
+
+func (uc *CreatePostUseCase) savePost(post *domain.Post) error {
+	repositoryErr := uc.PostRepository.SavePost(post)
+	if repositoryErr != nil {
+		return repositoryErr
+	}
+	return nil
+}
+
+func (uc *CreatePostUseCase) Execute(req CreatePostInput) (*CreatePostOutput, error) {
+
+	if authorValidationErr := uc.validateAuthorID(req.AuthorID); authorValidationErr != nil {
+		return nil, authorValidationErr
 	}
 
-	// 4. Generate ID and timestamp
+	post := uc.createPost(req.Content, req.AuthorID)
+
+	if contentValidationErr := uc.validatePostContent(post); contentValidationErr != nil {
+		return nil, contentValidationErr
+	}
+
 	post.ID = uuid.New().String()
 	post.CreatedAt = time.Now()
 
-	// 5. Save post
-	err := uc.PostRepository.SavePost(post)
-	if err != nil {
-		return nil, err
+	if saveErr := uc.savePost(post); saveErr != nil {
+		return nil, saveErr
 	}
 
-	// 6. Return response
-	return &CreatePostResponse{
+	return &CreatePostOutput{
 		ID:        post.ID,
 		Content:   post.Content,
 		AuthorID:  post.AuthorID,

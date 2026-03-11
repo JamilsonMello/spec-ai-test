@@ -14,42 +14,36 @@ var (
 	ErrUnauthorizedRole = errors.New("unauthorized: admin role required")
 )
 
-// DeleteUserUseCase handles the business logic for deleting a user by ID.
 type DeleteUserUseCase struct {
 	UserRepository domain.UserRepository
 }
 
-// NewDeleteUserUseCase creates a new DeleteUserUseCase.
 func NewDeleteUserUseCase(repo domain.UserRepository) *DeleteUserUseCase {
 	return &DeleteUserUseCase{
 		UserRepository: repo,
 	}
 }
 
-// Execute performs the user deletion process.
 func (uc *DeleteUserUseCase) Execute(userID string, userRole string) error {
-	// Validate admin role
+
 	if userRole != "admin" {
 		return ErrUnauthorizedRole
 	}
 
-	// Validate UUID format
-	if _, err := uuid.Parse(userID); err != nil {
+	if _, uuidParseErr := uuid.Parse(userID); uuidParseErr != nil {
 		return ErrInvalidUserID
 	}
 
-	// Check if user exists
-	user, err := uc.UserRepository.GetUserByID(userID)
-	if err != nil {
+	user, repositoryErr := uc.UserRepository.GetUserByID(userID)
+	if repositoryErr != nil {
 		return ErrUserNotFound
 	}
 	if user == nil {
 		return ErrUserNotFound
 	}
 
-	// Delete user from repository
-	if err := uc.UserRepository.DeleteUser(userID); err != nil {
-		return err
+	if deleteErr := uc.UserRepository.DeleteUser(userID); deleteErr != nil {
+		return deleteErr
 	}
 
 	return nil

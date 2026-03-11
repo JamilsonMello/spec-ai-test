@@ -9,7 +9,6 @@ import (
 	"github.com/example/cadastro-de-usuarios/domain"
 )
 
-// Custom errors for use case validation
 var (
 	ErrInvalidName      = errors.New("nome deve ter entre 2 e 50 caracteres e conter apenas letras e espaços")
 	ErrInvalidSurname   = errors.New("sobrenome deve ter entre 2 e 50 caracteres e conter apenas letras e espaços")
@@ -20,27 +19,71 @@ var (
 	ErrFutureBirthDate  = errors.New("data de nascimento não pode ser no futuro")
 )
 
-// RegisterUserUseCase handles the business logic for user registration.
+type RegisterUserInput struct {
+	Name      string `json:"name"`
+	Surname   string `json:"surname"`
+	Email     string `json:"email"`
+	BirthDate string `json:"birthDate"`
+}
+
+type RegisterUserOutput struct {
+	ID        uuid.UUID `json:"id"`
+	Name      string    `json:"name"`
+	Surname   string    `json:"surname"`
+	Email     string    `json:"email"`
+	BirthDate string    `json:"birthDate"`
+}
+
 type RegisterUserUseCase struct {
 	UserRepository domain.UserRepository
 }
 
-// NewRegisterUserUseCase creates a new RegisterUserUseCase.
 func NewRegisterUserUseCase(repo domain.UserRepository) *RegisterUserUseCase {
 	return &RegisterUserUseCase{
 		UserRepository: repo,
 	}
 }
 
-// Execute performs the user registration process.
-func (uc *RegisterUserUseCase) Execute(req RegisterUserRequest) (*RegisterUserResponse, error) {
-	// 1. Parse and validate BirthDate
-	birthDate, err := time.Parse("2006-01-02", req.BirthDate)
-	if err != nil {
-		return nil, ErrInvalidBirthDate
+func (uc *RegisterUserUseCase) validateUserInput(user *domain.User) error {
+	if !user.IsValidName() {
+		return ErrInvalidName
 	}
+	if !user.IsValidSurname() {
+		return ErrInvalidSurname
+	}
+	if !user.IsValidEmailFormat() {
+		return ErrInvalidEmail
+	}
+	if !user.IsPastDate() {
+		return ErrFutureBirthDate
+	}
+	if !user.IsAdult() {
+		return ErrUserTooYoung
+	}
+	return nil
+}
 
-	user := &domain.User{
+func (uc *RegisterUserUseCase) checkEmailUniqueness(email string) error {
+	existingUser, lookupErr := uc.UserRepository.GetUserByEmail(email)
+	if lookupErr != nil && lookupErr != errors.New("user not found") {
+		return lookupErr
+	}
+	if existingUser != nil {
+		return ErrEmailInUse
+	}
+	return nil
+}
+
+func (uc *RegisterUserUseCase) parseBirthDate(birthDateStr string) (time.Time, error) {
+	birthDate, parseErr := time.Parse("2006-01-02", birthDateStr)
+	if parseErr != nil {
+		return time.Time{}, ErrInvalidBirthDate
+	}
+	return birthDate, nil
+}
+
+func (uc *RegisterUserUseCase) createUser(req RegisterUserInput, birthDate time.Time) *domain.User {
+	return &domain.User{
 		Name:      req.Name,
 		Surname:   req.Surname,
 		Email:     req.Email,
@@ -48,51 +91,51 @@ func (uc *RegisterUserUseCase) Execute(req RegisterUserRequest) (*RegisterUserRe
 		Role:      "user",
 		CreatedAt: time.Now(),
 	}
+}
 
-	// 2. Validate user fields using domain methods
-	if !user.IsValidName() {
-		return nil, ErrInvalidName
-	}
-
-	if !user.IsValidSurname() {
-		return nil, ErrInvalidSurname
-	}
-
-	if !user.IsValidEmailFormat() {
-		return nil, ErrInvalidEmail
-	}
-
-	if !user.IsPastDate() {
-		return nil, ErrFutureBirthDate
-	}
-
-	if !user.IsAdult() {
-		return nil, ErrUserTooYoung
-	}
-
-	// 3. Check for email uniqueness
-	existingUser, err := uc.UserRepository.GetUserByEmail(user.Email)
-	if err != nil && err != errors.New("user not found") { // Handle actual errors other than not found
-		return nil, err
-	}
-	if existingUser != nil {
-		return nil, ErrEmailInUse
-	}
-
-	// 4. Generate ID and save user
+func (uc *RegisterUserUseCase) assignUserID(user *domain.User) {
 	user.ID = uuid.New().String()
+}
 
-	err = uc.UserRepository.SaveUser(user)
-	if err != nil {
-		return nil, err
+func (uc *RegisterUserUseCase) saveUserToRepo(user *domain.User) error {
+	saveErr := uc.UserRepository.SaveUser(user)
+	if saveErr != nil {
+		return saveErr
 	}
+	return nil
+}
 
-	// 5. Return response
-	return &RegisterUserResponse{
+func (uc *RegisterUserUseCase) mapUserToOutput(user *domain.User) *RegisterUserOutput {
+	return &RegisterUserOutput{
 		ID:        uuid.MustParse(user.ID),
 		Name:      user.Name,
 		Surname:   user.Surname,
 		Email:     user.Email,
 		BirthDate: user.BirthDate.Format("2006-01-02"),
-	}, nil
+	}
+}
+
+func (uc *RegisterUserUseCase) Execute(req RegisterUserInput) (*RegisterUserOutput, error) {
+	birthDate, birthDateParseErr := uc.parseBirthDate(req.BirthDate)
+	if birthDateParseErr != nil {
+		return nil, birthDateParseErr
+	}
+
+	user := uc.createUser(req, birthDate)
+
+	if validationErr := uc.validateUserInput(user); validationErr != nil {
+		return nil, validationErr
+	}
+
+	if emailCheckErr := uc.checkEmailUniqueness(user.Email); emailCheckErr != nil {
+		return nil, emailCheckErr
+	}
+
+	uc.assignUserID(user)
+
+	if saveErr := uc.saveUserToRepo(user); saveErr != nil {
+		return nil, saveErr
+	}
+
+	return uc.mapUserToOutput(user), nil
 }
