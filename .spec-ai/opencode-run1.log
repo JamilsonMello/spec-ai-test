@@ -1,7 +1,0 @@
-Performing one time database migration, may take a few minutes...
-sqlite-migration:done
-Database migration complete.
-[0m
-> build · deepseek-chat
-[0m
-[91m[1mError: [0mUnable to connect. Is the computer able to access the url?
