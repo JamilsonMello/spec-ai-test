@@ -7,16 +7,16 @@ import (
 	"github.com/labstack/echo/v4"
 	_ "github.com/lib/pq"
 
-	"github.com/example/cadastro-de-usuarios/application/usecase"
-	"github.com/example/cadastro-de-usuarios/infrastructure/repository"
-	"github.com/example/cadastro-de-usuarios/infrastructure/service"
-	pkgdb "github.com/example/cadastro-de-usuarios/pkg/db"
-	"github.com/example/cadastro-de-usuarios/presentation/handler"
-	"github.com/example/cadastro-de-usuarios/presentation/middleware"
+	"github.com/example/cadastro-de-usuarios/internal/application/usecase"
+	"github.com/example/cadastro-de-usuarios/internal/infrastructure"
+	"github.com/example/cadastro-de-usuarios/internal/infrastructure/repository"
+	"github.com/example/cadastro-de-usuarios/internal/infrastructure/service"
+	"github.com/example/cadastro-de-usuarios/internal/presentation/handler"
+	"github.com/example/cadastro-de-usuarios/internal/presentation/middleware"
 )
 
 func main() {
-	db, err := pkgdb.Connect(os.Getenv("DATABASE_URL"))
+	db, err := infrastructure.Connect(os.Getenv("DATABASE_URL"))
 	if err != nil {
 		log.Fatalf("failed to connect to database: %v", err)
 	}
@@ -26,7 +26,7 @@ func main() {
 	passwordRecoveryRepo := repository.NewPasswordRecoveryRepository(db)
 	postRepo := repository.NewPostRepository(db)
 
-	emailService := service.NewEmailService()
+	emailSender := service.NewEmailSender()
 	jwtValidatorService := service.NewJWTValidatorService()
 
 	registerUserUC := usecase.NewRegisterUserUseCase(userRepo)
@@ -34,7 +34,7 @@ func main() {
 	deleteUserUC := usecase.NewDeleteUserUseCase(userRepo)
 	updateUserProfileUC := usecase.NewUpdateUserProfileUseCase(userRepo)
 
-	requestPasswordRecoveryUC := usecase.NewRequestPasswordRecoveryUseCase(userRepo, passwordRecoveryRepo, emailService)
+	requestPasswordRecoveryUC := usecase.NewRequestPasswordRecoveryUseCase(userRepo, passwordRecoveryRepo, emailSender)
 	resetPasswordUC := usecase.NewResetPasswordUseCase(userRepo, passwordRecoveryRepo)
 	createPostUC := usecase.NewCreatePostUseCase(postRepo)
 	updatePostUC := usecase.NewUpdatePostUseCase(postRepo)
