@@ -10,18 +10,20 @@ import (
 )
 
 type UserHandler struct {
-	RegisterUserUseCase      *usecase.RegisterUserUseCase
-	ListUsersUseCase         *usecase.ListUsersUseCase
-	UpdateUserProfileUseCase *usecase.UpdateUserProfileUseCase
-	DeleteUserUseCase        *usecase.DeleteUserUseCase
+	RegisterUserUseCase            *usecase.RegisterUserUseCase
+	ListUsersUseCase               *usecase.ListUsersUseCase
+	UpdateUserProfileUseCase       *usecase.UpdateUserProfileUseCase
+	DeleteUserUseCase              *usecase.DeleteUserUseCase
+	UploadProfilePictureUseCase    *usecase.UploadProfilePictureUseCase
 }
 
-func NewUserHandler(registerUC *usecase.RegisterUserUseCase, listUC *usecase.ListUsersUseCase, updateProfileUC *usecase.UpdateUserProfileUseCase, deleteUC *usecase.DeleteUserUseCase) *UserHandler {
+func NewUserHandler(registerUC *usecase.RegisterUserUseCase, listUC *usecase.ListUsersUseCase, updateProfileUC *usecase.UpdateUserProfileUseCase, deleteUC *usecase.DeleteUserUseCase, uploadPictureUC *usecase.UploadProfilePictureUseCase) *UserHandler {
 	return &UserHandler{
-		RegisterUserUseCase:      registerUC,
-		ListUsersUseCase:         listUC,
-		UpdateUserProfileUseCase: updateProfileUC,
-		DeleteUserUseCase:        deleteUC,
+		RegisterUserUseCase:         registerUC,
+		ListUsersUseCase:            listUC,
+		UpdateUserProfileUseCase:    updateProfileUC,
+		DeleteUserUseCase:           deleteUC,
+		UploadProfilePictureUseCase: uploadPictureUC,
 	}
 }
 
@@ -115,4 +117,40 @@ func (handler *UserHandler) UpdateUserProfile(c echo.Context) error {
 	}
 
 	return c.NoContent(http.StatusNoContent)
+}
+
+func mapUploadErrorCode(err error) string {
+	switch err {
+	case usecase.ErrFileTooLarge, usecase.ErrUnsupportedFileFormat:
+		return "INVALID_FILE"
+	case usecase.ErrUserNotFoundUpload:
+		return "USER_NOT_FOUND"
+	default:
+		return "INTERNAL_ERROR"
+	}
+}
+
+func (handler *UserHandler) UploadProfilePicture(c echo.Context) error {
+	userID := c.Param("id")
+
+	file, header, err := c.Request().FormFile("foto")
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Arquivo inválido ou muito grande", "code": "INVALID_FILE"})
+	}
+	defer file.Close()
+
+	req := usecase.UploadProfilePictureRequest{
+		UserID: userID,
+		File:   file,
+		Header: header,
+	}
+
+	resp, err := handler.UploadProfilePictureUseCase.Execute(req)
+	if err != nil {
+		statusCode, message := MapErrorToHTTP(err)
+		code := mapUploadErrorCode(err)
+		return c.JSON(statusCode, map[string]string{"error": message, "code": code})
+	}
+
+	return c.JSON(http.StatusOK, resp)
 }

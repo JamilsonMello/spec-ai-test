@@ -6,6 +6,7 @@ type UserRepository interface {
 	FindUserByUuid(id string) (*User, error)
 	DeleteUser(id string) error
 	UpdateUser(user *User) error
+	UpdateProfilePictureURL(userID string, url string) error
 	ListUsers(filter UserFilter, page int, limit int) ([]*User, int, error)
 }
 

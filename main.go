@@ -33,6 +33,7 @@ func main() {
 	listUsersUC := usecase.NewListUsersUseCase(userRepo)
 	deleteUserUC := usecase.NewDeleteUserUseCase(userRepo)
 	updateUserProfileUC := usecase.NewUpdateUserProfileUseCase(userRepo)
+	uploadProfilePictureUC := usecase.NewUploadProfilePictureUseCase(userRepo, "./uploads")
 
 	requestPasswordRecoveryUC := usecase.NewRequestPasswordRecoveryUseCase(userRepo, passwordRecoveryRepo, emailSender)
 	resetPasswordUC := usecase.NewResetPasswordUseCase(userRepo, passwordRecoveryRepo)
@@ -40,11 +41,13 @@ func main() {
 	updatePostUC := usecase.NewUpdatePostUseCase(postRepo)
 	validateTokenUC := usecase.NewValidateTokenUseCase(jwtValidatorService)
 
-	userHandler := handler.NewUserHandler(registerUserUC, listUsersUC, updateUserProfileUC, deleteUserUC)
+	userHandler := handler.NewUserHandler(registerUserUC, listUsersUC, updateUserProfileUC, deleteUserUC, uploadProfilePictureUC)
 	passwordRecoveryHandler := handler.NewPasswordRecoveryHandler(requestPasswordRecoveryUC, resetPasswordUC)
 	postHandler := handler.NewPostHandler(createPostUC, updatePostUC)
 
 	e := echo.New()
+
+	e.Static("/uploads", "./uploads")
 
 	e.POST("/usuarios", userHandler.RegisterUser)
 	e.POST("/password-recovery", passwordRecoveryHandler.RequestPasswordRecovery)
@@ -56,6 +59,7 @@ func main() {
 	protected.GET("/usuarios/listar", userHandler.ListUsers)
 	protected.DELETE("/usuarios/:id", userHandler.DeleteUser)
 	protected.PUT("/usuarios/:id", userHandler.UpdateUserProfile)
+	protected.POST("/usuarios/:id/foto-perfil", userHandler.UploadProfilePicture)
 	protected.POST("/posts", postHandler.CreatePost)
 	protected.PUT("/posts/:id", postHandler.UpdatePost)
 
