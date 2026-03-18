@@ -19,9 +19,9 @@ func NewUserRepository(db *sql.DB) *UserRepository {
 }
 
 func (r *UserRepository) SaveUser(user *domain.User) error {
-	query := `INSERT INTO users (id, name, surname, email, birth_date, password, recovery_token, role, created_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`
-	_, err := r.db.Exec(query, user.ID, user.Name, user.Surname, user.Email, user.BirthDate, user.Password, user.RecoveryToken, user.Role, user.CreatedAt)
+	query := `INSERT INTO users (id, name, surname, email, birth_date, password, recovery_token, role, profile_picture_url, created_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`
+	_, err := r.db.Exec(query, user.ID, user.Name, user.Surname, user.Email, user.BirthDate, user.Password, user.RecoveryToken, user.Role, user.ProfilePictureURL, user.CreatedAt)
 	if err != nil {
 		if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == "23505" {
 			return domain.ErrEmailAlreadyExists
@@ -32,12 +32,12 @@ func (r *UserRepository) SaveUser(user *domain.User) error {
 }
 
 func (r *UserRepository) GetUserByEmail(email string) (*domain.User, error) {
-	query := `SELECT id, name, surname, email, birth_date, password, recovery_token, role, created_at
+	query := `SELECT id, name, surname, email, birth_date, password, recovery_token, role, profile_picture_url, created_at
 		FROM users WHERE email = $1`
 	user := &domain.User{}
 	err := r.db.QueryRow(query, email).Scan(
 		&user.ID, &user.Name, &user.Surname, &user.Email,
-		&user.BirthDate, &user.Password, &user.RecoveryToken, &user.Role, &user.CreatedAt,
+		&user.BirthDate, &user.Password, &user.RecoveryToken, &user.Role, &user.ProfilePictureURL, &user.CreatedAt,
 	)
 	if err == sql.ErrNoRows {
 		return nil, domain.ErrUserNotFound
@@ -49,12 +49,12 @@ func (r *UserRepository) GetUserByEmail(email string) (*domain.User, error) {
 }
 
 func (r *UserRepository) FindUserByUuid(id string) (*domain.User, error) {
-	query := `SELECT id, name, surname, email, birth_date, password, recovery_token, role, created_at
+	query := `SELECT id, name, surname, email, birth_date, password, recovery_token, role, profile_picture_url, created_at
 		FROM users WHERE id = $1`
 	user := &domain.User{}
 	err := r.db.QueryRow(query, id).Scan(
 		&user.ID, &user.Name, &user.Surname, &user.Email,
-		&user.BirthDate, &user.Password, &user.RecoveryToken, &user.Role, &user.CreatedAt,
+		&user.BirthDate, &user.Password, &user.RecoveryToken, &user.Role, &user.ProfilePictureURL, &user.CreatedAt,
 	)
 	if err == sql.ErrNoRows {
 		return nil, domain.ErrUserNotFound
@@ -66,11 +66,26 @@ func (r *UserRepository) FindUserByUuid(id string) (*domain.User, error) {
 }
 
 func (r *UserRepository) UpdateUser(user *domain.User) error {
-	query := `UPDATE users SET name=$1, surname=$2, email=$3, birth_date=$4, password=$5, recovery_token=$6, role=$7
-		WHERE id=$8`
-	result, err := r.db.Exec(query, user.Name, user.Surname, user.Email, user.BirthDate, user.Password, user.RecoveryToken, user.Role, user.ID)
+	query := `UPDATE users SET name=$1, surname=$2, email=$3, birth_date=$4, password=$5, recovery_token=$6, role=$7, profile_picture_url=$8
+		WHERE id=$9`
+	result, err := r.db.Exec(query, user.Name, user.Surname, user.Email, user.BirthDate, user.Password, user.RecoveryToken, user.Role, user.ProfilePictureURL, user.ID)
 	if err != nil {
 		return fmt.Errorf("failed to update user: %w", err)
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to check rows affected: %w", err)
+	}
+	if affected == 0 {
+		return domain.ErrUserNotFound
+	}
+	return nil
+}
+
+func (r *UserRepository) UpdateProfilePictureURL(userID string, url string) error {
+	result, err := r.db.Exec(`UPDATE users SET profile_picture_url=$1 WHERE id=$2`, url, userID)
+	if err != nil {
+		return fmt.Errorf("failed to update profile picture url: %w", err)
 	}
 	affected, err := result.RowsAffected()
 	if err != nil {
@@ -120,7 +135,7 @@ func (r *UserRepository) ListUsers(filter domain.UserFilter, page int, limit int
 
 	listArgs := append(args, limit, (page-1)*limit)
 	listQuery := fmt.Sprintf(
-		`SELECT id, name, surname, email, birth_date, password, recovery_token, role, created_at
+		`SELECT id, name, surname, email, birth_date, password, recovery_token, role, profile_picture_url, created_at
 		FROM users %s ORDER BY created_at DESC LIMIT $%d OFFSET $%d`,
 		where, idx, idx+1,
 	)
@@ -136,7 +151,7 @@ func (r *UserRepository) ListUsers(filter domain.UserFilter, page int, limit int
 		user := &domain.User{}
 		if err := rows.Scan(
 			&user.ID, &user.Name, &user.Surname, &user.Email,
-			&user.BirthDate, &user.Password, &user.RecoveryToken, &user.Role, &user.CreatedAt,
+			&user.BirthDate, &user.Password, &user.RecoveryToken, &user.Role, &user.ProfilePictureURL, &user.CreatedAt,
 		); err != nil {
 			return nil, 0, fmt.Errorf("failed to scan user: %w", err)
 		}

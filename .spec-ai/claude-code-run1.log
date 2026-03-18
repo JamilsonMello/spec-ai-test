@@ -1,0 +1,7 @@
+All tasks complete. Here's what was fixed:
+
+1. **Content-Type validation** — Added `validateContentType` method in `internal/application/usecase/upload_profile_picture.go` that checks `header.Header.Get("Content-Type")` against `image/jpeg` and `image/png`. This runs before the file extension check.
+
+2. **Error code field** — Added `mapUploadErrorCode` function in `internal/presentation/handler/user_handler.go` that maps usecase errors to the spec's error codes (`INVALID_FILE`, `USER_NOT_FOUND`, `INTERNAL_ERROR`). The upload handler now returns both `error` and `code` fields in JSON responses.
+
+Build passes cleanly. STATUS set to COMPLETE.
