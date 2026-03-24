@@ -1,8 +1,12 @@
 package main
 
 import (
+	"context"
 	"log"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/labstack/echo/v4"
 	_ "github.com/lib/pq"
@@ -11,12 +15,17 @@ import (
 	"github.com/example/cadastro-de-usuarios/internal/infrastructure"
 	"github.com/example/cadastro-de-usuarios/internal/infrastructure/repository"
 	"github.com/example/cadastro-de-usuarios/internal/infrastructure/service"
+	"github.com/example/cadastro-de-usuarios/internal/presentation"
 	"github.com/example/cadastro-de-usuarios/internal/presentation/handler"
-	"github.com/example/cadastro-de-usuarios/internal/presentation/middleware"
 )
 
 func main() {
-	db, err := infrastructure.Connect(os.Getenv("DATABASE_URL"))
+	databaseURL := os.Getenv("DATABASE_URL")
+	if databaseURL == "" {
+		log.Fatal("DATABASE_URL environment variable is required")
+	}
+
+	db, err := infrastructure.Connect(databaseURL)
 	if err != nil {
 		log.Fatalf("failed to connect to database: %v", err)
 	}
@@ -47,23 +56,33 @@ func main() {
 
 	e := echo.New()
 
-	e.Static("/uploads", "./uploads")
+	deps := presentation.RouterDependencies{
+		UserHandler:             userHandler,
+		PostHandler:             postHandler,
+		PasswordRecoveryHandler: passwordRecoveryHandler,
+	}
+	presentation.NewRouter(e, deps, validateTokenUC)
 
-	e.POST("/usuarios", userHandler.RegisterUser)
-	e.POST("/password-recovery", passwordRecoveryHandler.RequestPasswordRecovery)
-	e.POST("/password-recovery/reset", passwordRecoveryHandler.ResetPassword)
+	go func() {
+		port := ":8080"
+		log.Printf("Server listening on port %s\n", port)
+		if err := e.Start(port); err != nil {
+			log.Printf("Server stopped: %v\n", err)
+		}
+	}()
 
-	protected := e.Group("")
-	protected.Use(middleware.AuthMiddleware(validateTokenUC))
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
 
-	protected.GET("/usuarios/listar", userHandler.ListUsers)
-	protected.DELETE("/usuarios/:id", userHandler.DeleteUser)
-	protected.PUT("/usuarios/:id", userHandler.UpdateUserProfile)
-	protected.POST("/usuarios/:id/foto-perfil", userHandler.UploadProfilePicture)
-	protected.POST("/posts", postHandler.CreatePost)
-	protected.PUT("/posts/:id", postHandler.UpdatePost)
+	log.Println("Shutting down server...")
 
-	port := ":8080"
-	log.Printf("Server listening on port %s\n", port)
-	log.Fatal(e.Start(port))
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	if err := e.Shutdown(ctx); err != nil {
+		log.Printf("Server shutdown error: %v\n", err)
+	}
+
+	log.Println("Server exited")
 }
