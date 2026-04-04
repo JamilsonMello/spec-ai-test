@@ -19,6 +19,7 @@ type PostRepository interface {
 	SavePost(post *Post) error
 	GetPostByID(id string) (*Post, error)
 	UpdatePost(post *Post) error
+	UpdatePostVideo(postID string, videoURL string) error
 }
 
 type PasswordRecoveryRepository interface {
