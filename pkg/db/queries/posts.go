@@ -27,7 +27,13 @@ WHERE id = $3
 `
 
 const SelectPostByIDSQL = `
-SELECT id, content, author_id, created_at, updated_at
+SELECT id, content, author_id, video_url, created_at, updated_at
 FROM posts
 WHERE id = $1
+`
+
+const UpdatePostVideoSQL = `
+UPDATE posts
+SET video_url = $1
+WHERE id = $2
 `

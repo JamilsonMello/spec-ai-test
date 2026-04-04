@@ -9,9 +9,10 @@ import (
 
 func MapErrorToHTTP(err error) (int, string) {
 	switch err {
-	case usecase.ErrFileTooLarge, usecase.ErrUnsupportedFileFormat:
+	case usecase.ErrFileTooLarge, usecase.ErrUnsupportedFileFormat,
+		usecase.ErrVideoFileTooLarge, usecase.ErrUnsupportedVideoFormat:
 		return http.StatusBadRequest, err.Error()
-	case usecase.ErrSaveFileFailed:
+	case usecase.ErrSaveFileFailed, usecase.ErrSaveVideoFailed:
 		return http.StatusInternalServerError, err.Error()
 	case usecase.ErrInvalidName, usecase.ErrInvalidSurname, usecase.ErrInvalidEmail,
 		usecase.ErrInvalidBirthDate, usecase.ErrUserTooYoung, usecase.ErrFutureBirthDate,
@@ -22,9 +23,9 @@ func MapErrorToHTTP(err error) (int, string) {
 	case domain.ErrEmailAlreadyExists, usecase.ErrEmailInUse:
 		return http.StatusBadRequest, err.Error()
 	case domain.ErrUserNotFound, usecase.ErrUserNotFoundUpdate, usecase.ErrUserNotFound, usecase.ErrUserNotFoundUpload,
-		domain.ErrPostNotFound, domain.ErrRecoveryTokenNotFound, usecase.ErrRecoveryTokenNotFound:
+		domain.ErrPostNotFound, usecase.ErrPostNotFoundUpload, domain.ErrRecoveryTokenNotFound, usecase.ErrRecoveryTokenNotFound:
 		return http.StatusNotFound, err.Error()
-	case usecase.ErrUnauthorizedRole, usecase.ErrUnauthorizedCreate, usecase.ErrUnauthorizedUpdate:
+	case usecase.ErrUnauthorizedRole, usecase.ErrUnauthorizedCreate, usecase.ErrUnauthorizedUpdate, usecase.ErrForbiddenUpload:
 		return http.StatusForbidden, err.Error()
 	default:
 		return http.StatusInternalServerError, "Internal server error"

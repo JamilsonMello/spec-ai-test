@@ -8,6 +8,7 @@ type Post struct {
 	ID        string    `json:"id"`
 	Content   string    `json:"content"`
 	AuthorID  string    `json:"authorId"`
+	VideoURL  string    `json:"videoUrl"`
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
 }

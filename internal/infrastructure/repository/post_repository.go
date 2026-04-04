@@ -42,8 +42,9 @@ func (r *PostRepository) UpdatePost(post *domain.Post) error {
 
 func (r *PostRepository) GetPostByID(id string) (*domain.Post, error) {
 	post := &domain.Post{}
+	var videoURL sql.NullString
 	err := r.db.QueryRow(queries.SelectPostByIDSQL, id).Scan(
-		&post.ID, &post.Content, &post.AuthorID, &post.CreatedAt, &post.UpdatedAt,
+		&post.ID, &post.Content, &post.AuthorID, &videoURL, &post.CreatedAt, &post.UpdatedAt,
 	)
 	if err == sql.ErrNoRows {
 		return nil, domain.ErrPostNotFound
@@ -51,5 +52,23 @@ func (r *PostRepository) GetPostByID(id string) (*domain.Post, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to get post by id: %w", err)
 	}
+	if videoURL.Valid {
+		post.VideoURL = videoURL.String
+	}
 	return post, nil
+}
+
+func (r *PostRepository) UpdatePostVideo(postID string, videoURL string) error {
+	result, err := r.db.Exec(queries.UpdatePostVideoSQL, videoURL, postID)
+	if err != nil {
+		return fmt.Errorf("failed to update post video: %w", err)
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to check rows affected: %w", err)
+	}
+	if affected == 0 {
+		return domain.ErrPostNotFound
+	}
+	return nil
 }
