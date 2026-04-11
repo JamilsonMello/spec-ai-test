@@ -26,6 +26,10 @@ func MapErrorToHTTP(err error) (int, string) {
 		return http.StatusNotFound, err.Error()
 	case usecase.ErrUnauthorizedRole, usecase.ErrUnauthorizedCreate, usecase.ErrUnauthorizedUpdate:
 		return http.StatusForbidden, err.Error()
+	case usecase.ErrInvalidRequest:
+		return http.StatusBadRequest, err.Error()
+	case usecase.ErrRepositoryFailure:
+		return http.StatusInternalServerError, err.Error()
 	default:
 		return http.StatusInternalServerError, "Internal server error"
 	}
