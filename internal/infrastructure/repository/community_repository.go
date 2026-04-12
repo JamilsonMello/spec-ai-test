@@ -24,6 +24,16 @@ func (r *CommunityRepository) SaveCommunity(community *domain.Community) error {
 	return nil
 }
 
+func (r *CommunityRepository) ExistsByID(id string) (bool, error) {
+	query := `SELECT EXISTS(SELECT 1 FROM communities WHERE id = $1)`
+	var exists bool
+	err := r.db.QueryRow(query, id).Scan(&exists)
+	if err != nil {
+		return false, fmt.Errorf("failed to check community existence by id: %w", err)
+	}
+	return exists, nil
+}
+
 func (r *CommunityRepository) ExistsByName(name string) (bool, error) {
 	query := `SELECT EXISTS(SELECT 1 FROM communities WHERE name = $1)`
 	var exists bool
