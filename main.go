@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"os"
+	"time"
 
 	"github.com/labstack/echo/v4"
 	_ "github.com/lib/pq"
@@ -29,8 +30,11 @@ func main() {
 	commentRepo := repository.NewCommentRepository(db)
 	reactionRepo := repository.NewReactionRepository(db)
 	communityRepo := repository.NewCommunityRepository(db)
+	productRepo := repository.NewProductRepository(db)
 
 	emailSender := service.NewEmailSender()
+	bcryptHasher := service.NewBcryptHasher()
+	txManager := infrastructure.NewSQLTransactionManager(db)
 	jwtValidatorService := service.NewJWTValidatorService()
 
 	registerUserUC := usecase.NewRegisterUserUseCase(userRepo)
@@ -41,13 +45,14 @@ func main() {
 	uploadProfilePictureUC := usecase.NewUploadProfilePictureUseCase(userRepo, localStorage)
 
 	requestPasswordRecoveryUC := usecase.NewRequestPasswordRecoveryUseCase(userRepo, passwordRecoveryRepo, emailSender)
-	resetPasswordUC := usecase.NewResetPasswordUseCase(userRepo, passwordRecoveryRepo)
+	resetPasswordUC := usecase.NewResetPasswordUseCase(userRepo, userRepo, passwordRecoveryRepo, passwordRecoveryRepo, bcryptHasher, txManager)
 	createPostUC := usecase.NewCreatePostUseCase(postRepo, communityRepo)
 	updatePostUC := usecase.NewUpdatePostUseCase(postRepo)
 	createCommentUC := usecase.NewCreateCommentUseCase(commentRepo)
 	listCommentsUC := usecase.NewListCommentsUseCase(commentRepo)
 	toggleReactionUC := usecase.NewToggleCommentReactionUseCase(reactionRepo, commentRepo)
 	createCommunityUC := usecase.NewCreateCommunityUseCase(communityRepo)
+	createProductUC := usecase.NewCreateProductUseCase(productRepo, communityRepo)
 	validateTokenUC := usecase.NewValidateTokenUseCase(jwtValidatorService)
 
 	userHandler := handler.NewUserHandler(registerUserUC, listUsersUC, updateUserProfileUC, deleteUserUC, uploadProfilePictureUC)
@@ -56,13 +61,15 @@ func main() {
 	commentHandler := handler.NewCommentHandler(createCommentUC, listCommentsUC)
 	reactionHandler := handler.NewReactionHandler(toggleReactionUC)
 	communityHandler := handler.NewCommunityHandler(createCommunityUC)
+	productHandler := handler.NewProductHandler(createProductUC)
 
 	e := echo.New()
 
 	e.Static("/uploads", "./uploads")
 
 	e.POST("/usuarios", userHandler.RegisterUser)
-	e.POST("/password-recovery", passwordRecoveryHandler.RequestPasswordRecovery)
+	rateLimiter := middleware.RateLimitMiddleware(5, 1*time.Minute)
+	e.POST("/password-recovery", passwordRecoveryHandler.RequestPasswordRecovery, rateLimiter)
 	e.POST("/password-recovery/reset", passwordRecoveryHandler.ResetPassword)
 
 	protected := e.Group("")
@@ -77,6 +84,7 @@ func main() {
 	protected.POST("/posts/:id/comments", commentHandler.CreateComment)
 	protected.POST("/comments/:id/reactions", reactionHandler.ToggleReaction)
 	protected.POST("/comunidades", communityHandler.CreateCommunity)
+	protected.POST("/products", productHandler.CreateProduct)
 
 	e.GET("/posts/:id/comments", commentHandler.ListComments)
 

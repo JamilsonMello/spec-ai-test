@@ -53,6 +53,8 @@ func (s *E2ESuite) setupServer() {
 	communityRepo := repository.NewCommunityRepository(s.db)
 
 	emailSender := service.NewEmailSender()
+	bcryptHasher := service.NewBcryptHasher()
+	txManager := infrastructure.NewSQLTransactionManager(s.db)
 	jwtValidatorService := service.NewJWTValidatorService()
 
 	registerUserUC := usecase.NewRegisterUserUseCase(userRepo)
@@ -63,7 +65,7 @@ func (s *E2ESuite) setupServer() {
 	uploadProfilePictureUC := usecase.NewUploadProfilePictureUseCase(userRepo, localStorage)
 
 	requestPasswordRecoveryUC := usecase.NewRequestPasswordRecoveryUseCase(userRepo, passwordRecoveryRepo, emailSender)
-	resetPasswordUC := usecase.NewResetPasswordUseCase(userRepo, passwordRecoveryRepo)
+	resetPasswordUC := usecase.NewResetPasswordUseCase(userRepo, userRepo, passwordRecoveryRepo, passwordRecoveryRepo, bcryptHasher, txManager)
 	createPostUC := usecase.NewCreatePostUseCase(postRepo, communityRepo)
 	updatePostUC := usecase.NewUpdatePostUseCase(postRepo)
 	createCommentUC := usecase.NewCreateCommentUseCase(commentRepo)

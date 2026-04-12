@@ -57,3 +57,23 @@ func (r *PasswordRecoveryRepository) UpdatePasswordRecovery(recovery *domain.Pas
 	}
 	return nil
 }
+
+func (r *PasswordRecoveryRepository) UpdatePasswordRecoveryTx(tx interface{}, recovery *domain.PasswordRecovery) error {
+	sqlTx, ok := tx.(*sql.Tx)
+	if !ok {
+		return fmt.Errorf("invalid transaction type")
+	}
+	query := `UPDATE password_recoveries SET used=$1 WHERE token=$2`
+	result, err := sqlTx.Exec(query, recovery.Used, recovery.Token)
+	if err != nil {
+		return fmt.Errorf("failed to update password recovery: %w", err)
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to check rows affected: %w", err)
+	}
+	if affected == 0 {
+		return domain.ErrRecoveryTokenNotFound
+	}
+	return nil
+}

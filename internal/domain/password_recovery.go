@@ -38,6 +38,10 @@ func (pr *PasswordRecovery) IsValid() bool {
 	return !pr.Used && time.Now().Before(pr.ExpiresAt)
 }
 
+func (pr *PasswordRecovery) IsExpired() bool {
+	return time.Now().After(pr.ExpiresAt)
+}
+
 func (pr *PasswordRecovery) MarkAsUsed() {
 	pr.Used = true
 }

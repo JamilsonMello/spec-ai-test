@@ -162,3 +162,24 @@ func (r *UserRepository) ListUsers(filter domain.UserFilter, page int, limit int
 	}
 	return users, total, nil
 }
+
+func (r *UserRepository) UpdateUserTx(tx interface{}, user *domain.User) error {
+	sqlTx, ok := tx.(*sql.Tx)
+	if !ok {
+		return fmt.Errorf("invalid transaction type")
+	}
+	query := `UPDATE users SET name=$1, surname=$2, email=$3, birth_date=$4, password=$5, recovery_token=$6, role=$7, profile_picture_url=$8
+		WHERE id=$9`
+	result, err := sqlTx.Exec(query, user.Name, user.Surname, user.Email, user.BirthDate, user.Password, user.RecoveryToken, user.Role, user.ProfilePictureURL, user.ID)
+	if err != nil {
+		return fmt.Errorf("failed to update user: %w", err)
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to check rows affected: %w", err)
+	}
+	if affected == 0 {
+		return domain.ErrUserNotFound
+	}
+	return nil
+}

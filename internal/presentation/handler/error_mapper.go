@@ -15,11 +15,13 @@ func MapErrorToHTTP(err error) (int, string) {
 		return http.StatusBadRequest, err.Error()
 	case usecase.ErrSaveFileFailed:
 		return http.StatusInternalServerError, err.Error()
+	case usecase.ErrInvalidToken, usecase.ErrPasswordTooShort:
+		return http.StatusBadRequest, err.Error()
 	case usecase.ErrInvalidName, usecase.ErrInvalidSurname, usecase.ErrInvalidEmail,
 		usecase.ErrInvalidBirthDate, usecase.ErrUserTooYoung, usecase.ErrFutureBirthDate,
 		usecase.ErrInvalidNameUpdate, usecase.ErrInvalidBirthDateUpdate, usecase.ErrFutureBirthDateUpdate,
-		usecase.ErrInvalidUserID, usecase.ErrInvalidContent, usecase.ErrInvalidToken,
-		usecase.ErrPasswordMismatch, usecase.ErrPasswordTooShort:
+		usecase.ErrInvalidUserID, usecase.ErrInvalidContent,
+		usecase.ErrPasswordMismatch:
 		return http.StatusUnprocessableEntity, err.Error()
 	case domain.ErrEmailAlreadyExists, usecase.ErrEmailInUse:
 		return http.StatusBadRequest, err.Error()
@@ -34,10 +36,16 @@ func MapErrorToHTTP(err error) (int, string) {
 	case domain.ErrCommunityNotFound:
 		return http.StatusNotFound, err.Error()
 	case domain.ErrUserNotFound, usecase.ErrUserNotFoundUpdate, usecase.ErrUserNotFound, usecase.ErrUserNotFoundUpload,
-		domain.ErrPostNotFound, domain.ErrRecoveryTokenNotFound, usecase.ErrRecoveryTokenNotFound:
+		domain.ErrPostNotFound, domain.ErrRecoveryTokenNotFound:
 		return http.StatusNotFound, err.Error()
 	case usecase.ErrUnauthorizedRole, usecase.ErrUnauthorizedCreate, usecase.ErrUnauthorizedUpdate:
 		return http.StatusForbidden, err.Error()
+	case usecase.ErrUnauthorizedCreateProduct:
+		return http.StatusUnauthorized, err.Error()
+	case domain.ErrInvalidProductName, domain.ErrInvalidProductDescription,
+		domain.ErrInvalidProductPrice, domain.ErrInvalidProductStock,
+		usecase.ErrInvalidProductInput:
+		return http.StatusBadRequest, err.Error()
 	default:
 		return http.StatusInternalServerError, "Internal server error"
 	}

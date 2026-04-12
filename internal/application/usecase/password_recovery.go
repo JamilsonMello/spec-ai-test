@@ -1,16 +1,7 @@
 package usecase
 
 import (
-	"errors"
-	"time"
-
 	"github.com/example/cadastro-de-usuarios/internal/domain"
-)
-
-var (
-	ErrRecoveryTokenNotFound = errors.New("token de recuperação não encontrado")
-	ErrTokenExpired          = errors.New("token expirado")
-	ErrTokenAlreadyUsed      = errors.New("token já foi utilizado")
 )
 
 type RequestPasswordRecoveryRequest struct {
@@ -18,9 +9,7 @@ type RequestPasswordRecoveryRequest struct {
 }
 
 type RequestPasswordRecoveryResponse struct {
-	Token     string `json:"token"`
-	Message   string `json:"message"`
-	ExpiresAt string `json:"expiresAt"`
+	Message string `json:"message"`
 }
 
 type RequestPasswordRecoveryUseCase struct {
@@ -38,28 +27,28 @@ func NewRequestPasswordRecoveryUseCase(userRepo domain.UserRepository, recoveryR
 }
 
 func (uc *RequestPasswordRecoveryUseCase) Execute(req RequestPasswordRecoveryRequest) (*RequestPasswordRecoveryResponse, error) {
+	genericResponse := &RequestPasswordRecoveryResponse{
+		Message: "Se um usuário com esse e-mail existir, você receberá instruções em breve.",
+	}
+
 	user, err := uc.UserRepository.GetUserByEmail(req.Email)
-	if err != nil {
-		return nil, ErrUserNotFound
+	if err != nil || user == nil {
+		return genericResponse, nil
 	}
 
 	recovery, err := domain.NewPasswordRecovery(user.ID)
 	if err != nil {
-		return nil, err
+		return genericResponse, nil
 	}
 
 	err = uc.PasswordRecoveryRepository.SavePasswordRecovery(recovery)
 	if err != nil {
-		return nil, err
+		return genericResponse, nil
 	}
 
 	if uc.EmailSender != nil {
 		_ = uc.EmailSender.SendPasswordRecoveryEmail(user.Email, recovery.Token)
 	}
 
-	return &RequestPasswordRecoveryResponse{
-		Token:     recovery.Token,
-		Message:   "Token de recuperação enviado com sucesso",
-		ExpiresAt: recovery.ExpiresAt.Format(time.RFC3339),
-	}, nil
+	return genericResponse, nil
 }

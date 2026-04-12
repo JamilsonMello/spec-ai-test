@@ -54,3 +54,24 @@ type FileStorage interface {
 type EmailSender interface {
 	SendPasswordRecoveryEmail(email string, token string) error
 }
+
+type PasswordHasher interface {
+	Hash(password string) (string, error)
+	Compare(hashedPassword string, password string) error
+}
+
+type TransactionManager interface {
+	ExecuteInTransaction(fn func(tx interface{}) error) error
+}
+
+type UserRepositoryTx interface {
+	UpdateUserTx(tx interface{}, user *User) error
+}
+
+type PasswordRecoveryRepositoryTx interface {
+	UpdatePasswordRecoveryTx(tx interface{}, recovery *PasswordRecovery) error
+}
+
+type ProductRepository interface {
+	SaveProduct(product *Product) error
+}

@@ -28,11 +28,7 @@ func (handler *PasswordRecoveryHandler) RequestPasswordRecovery(c echo.Context) 
 
 	resp, err := handler.RequestPasswordRecoveryUseCase.Execute(req)
 	if err != nil {
-		if err == usecase.ErrUserNotFound {
-			return c.JSON(http.StatusOK, map[string]string{"message": "Se o email existir em nossa base, você receberá instruções de recuperação"})
-		}
-		statusCode, message := MapErrorToHTTP(err)
-		return c.JSON(statusCode, map[string]string{"error": message})
+		return c.JSON(http.StatusOK, map[string]string{"message": "Se um usuário com esse e-mail existir, você receberá instruções em breve."})
 	}
 
 	return c.JSON(http.StatusOK, resp)
@@ -41,13 +37,12 @@ func (handler *PasswordRecoveryHandler) RequestPasswordRecovery(c echo.Context) 
 func (handler *PasswordRecoveryHandler) ResetPassword(c echo.Context) error {
 	var req usecase.ResetPasswordRequest
 	if err := c.Bind(&req); err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request payload"})
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Token inválido, expirado ou já utilizado."})
 	}
 
 	resp, err := handler.ResetPasswordUseCase.Execute(req)
 	if err != nil {
-		statusCode, message := MapErrorToHTTP(err)
-		return c.JSON(statusCode, map[string]string{"error": message})
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Token inválido, expirado ou já utilizado."})
 	}
 
 	return c.JSON(http.StatusOK, resp)
