@@ -5,11 +5,12 @@ import (
 )
 
 type Post struct {
-	ID        string    `json:"id"`
-	Content   string    `json:"content"`
-	AuthorID  string    `json:"authorId"`
-	CreatedAt time.Time `json:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt"`
+	ID          string    `json:"id"`
+	Content     string    `json:"content"`
+	AuthorID    string    `json:"authorId"`
+	CommunityID string    `json:"community_id,omitempty"`
+	CreatedAt   time.Time `json:"createdAt"`
+	UpdatedAt   time.Time `json:"updatedAt"`
 }
 
 func (p *Post) IsValidContent() bool {

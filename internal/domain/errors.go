@@ -8,4 +8,5 @@ var (
 	ErrPostNotFound          = errors.New("Post não encontrado")
 	ErrRecoveryTokenNotFound = errors.New("recovery token not found")
 	ErrCommentNotFound       = errors.New("Comment not found")
+	ErrCommunityAlreadyExists = errors.New("community already exists")
 )
