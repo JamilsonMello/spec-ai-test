@@ -22,6 +22,7 @@ func Connect(dsn string) (*sql.DB, error) {
 		queries.CreatePostsTableSQL,
 		queries.AddUpdatedAtColumnSQL,
 		queries.CreatePasswordRecoveriesTableSQL,
+		queries.CreateCommentsTableSQL,
 	}
 
 	if err := InitSchema(db, schemas); err != nil {

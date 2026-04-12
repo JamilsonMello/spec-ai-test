@@ -13,6 +13,10 @@ func MapErrorToHTTP(err error) (int, string) {
 		return http.StatusBadRequest, err.Error()
 	case usecase.ErrSaveFileFailed:
 		return http.StatusInternalServerError, err.Error()
+	case usecase.ErrInvalidCommentContent:
+		return http.StatusBadRequest, err.Error()
+	case usecase.ErrCommentPostNotFound:
+		return http.StatusNotFound, err.Error()
 	case usecase.ErrInvalidName, usecase.ErrInvalidSurname, usecase.ErrInvalidEmail,
 		usecase.ErrInvalidBirthDate, usecase.ErrUserTooYoung, usecase.ErrFutureBirthDate,
 		usecase.ErrInvalidNameUpdate, usecase.ErrInvalidBirthDateUpdate, usecase.ErrFutureBirthDateUpdate,

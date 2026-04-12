@@ -27,6 +27,10 @@ type PasswordRecoveryRepository interface {
 	UpdatePasswordRecovery(recovery *PasswordRecovery) error
 }
 
+type CommentRepository interface {
+	SaveComment(comment *Comment) error
+}
+
 type EmailSender interface {
 	SendPasswordRecoveryEmail(email string, token string) error
 }
