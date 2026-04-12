@@ -24,6 +24,10 @@ func main() {
 	}
 	defer db.Close()
 
+	if err := infrastructure.RunMigrations(db); err != nil {
+		log.Fatalf("failed to run migrations: %v", err)
+	}
+
 	userRepo := repository.NewUserRepository(db)
 	passwordRecoveryRepo := repository.NewPasswordRecoveryRepository(db)
 	postRepo := repository.NewPostRepository(db)
