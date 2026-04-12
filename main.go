@@ -11,6 +11,7 @@ import (
 	"github.com/example/cadastro-de-usuarios/internal/infrastructure"
 	"github.com/example/cadastro-de-usuarios/internal/infrastructure/repository"
 	"github.com/example/cadastro-de-usuarios/internal/infrastructure/service"
+	"github.com/example/cadastro-de-usuarios/internal/infrastructure/storage"
 	"github.com/example/cadastro-de-usuarios/internal/presentation/handler"
 	"github.com/example/cadastro-de-usuarios/internal/presentation/middleware"
 )
@@ -35,7 +36,8 @@ func main() {
 	listUsersUC := usecase.NewListUsersUseCase(userRepo)
 	deleteUserUC := usecase.NewDeleteUserUseCase(userRepo)
 	updateUserProfileUC := usecase.NewUpdateUserProfileUseCase(userRepo)
-	uploadProfilePictureUC := usecase.NewUploadProfilePictureUseCase(userRepo, "./uploads")
+	localStorage := storage.NewLocalStorage("./uploads")
+	uploadProfilePictureUC := usecase.NewUploadProfilePictureUseCase(userRepo, localStorage)
 
 	requestPasswordRecoveryUC := usecase.NewRequestPasswordRecoveryUseCase(userRepo, passwordRecoveryRepo, emailSender)
 	resetPasswordUC := usecase.NewResetPasswordUseCase(userRepo, passwordRecoveryRepo)

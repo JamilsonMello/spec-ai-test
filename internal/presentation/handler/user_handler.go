@@ -152,5 +152,5 @@ func (handler *UserHandler) UploadProfilePicture(c echo.Context) error {
 		return c.JSON(statusCode, map[string]string{"error": message, "code": code})
 	}
 
-	return c.JSON(http.StatusOK, resp)
+	return c.JSON(http.StatusCreated, resp)
 }

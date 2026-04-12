@@ -5,8 +5,7 @@ import (
 	"fmt"
 	"io"
 	"mime/multipart"
-	"os"
-	"path/filepath"
+	"net/http"
 	"strings"
 
 	"github.com/google/uuid"
@@ -15,13 +14,13 @@ import (
 )
 
 var (
-	ErrFileTooLarge           = errors.New("Arquivo excede o limite de 5MB")
-	ErrUnsupportedFileFormat  = errors.New("Formato de arquivo não suportado")
-	ErrUserNotFoundUpload     = errors.New("Usuário não encontrado")
-	ErrSaveFileFailed         = errors.New("Falha ao salvar imagem")
+	ErrFileTooLarge          = errors.New("Arquivo muito grande")
+	ErrUnsupportedFileFormat = errors.New("Formato de arquivo inválido")
+	ErrUserNotFoundUpload    = errors.New("Usuário não encontrado")
+	ErrSaveFileFailed        = errors.New("Falha ao salvar imagem")
 )
 
-const maxFileSize = 5 * 1024 * 1024
+const maxFileSize = 2 * 1024 * 1024
 
 type UploadProfilePictureRequest struct {
 	UserID string
@@ -36,13 +35,13 @@ type UploadProfilePictureResponse struct {
 
 type UploadProfilePictureUseCase struct {
 	UserRepository domain.UserRepository
-	UploadPath     string
+	FileStorage    domain.FileStorage
 }
 
-func NewUploadProfilePictureUseCase(repo domain.UserRepository, uploadPath string) *UploadProfilePictureUseCase {
+func NewUploadProfilePictureUseCase(repo domain.UserRepository, fileStorage domain.FileStorage) *UploadProfilePictureUseCase {
 	return &UploadProfilePictureUseCase{
 		UserRepository: repo,
-		UploadPath:     uploadPath,
+		FileStorage:    fileStorage,
 	}
 }
 
@@ -55,27 +54,30 @@ func (uc *UploadProfilePictureUseCase) Execute(req UploadProfilePictureRequest) 
 		return nil, err
 	}
 
-	if err := uc.validateContentType(req.Header); err != nil {
-		return nil, err
-	}
-
-	ext, err := uc.validateFileExtension(req.Header.Filename)
+	contentType, err := uc.detectContentType(req.File)
 	if err != nil {
 		return nil, err
 	}
 
-	relativePath, err := uc.saveFile(req.File, ext)
-	if err != nil {
-		return nil, err
+	ext := uc.extensionFromContentType(contentType)
+	if ext == "" {
+		return nil, ErrUnsupportedFileFormat
 	}
 
-	if err := uc.UserRepository.UpdateProfilePictureURL(req.UserID, relativePath); err != nil {
+	filename := fmt.Sprintf("%s%s", uuid.New().String(), ext)
+
+	url, err := uc.FileStorage.Save(req.File, filename)
+	if err != nil {
+		return nil, ErrSaveFileFailed
+	}
+
+	if err := uc.UserRepository.UpdateProfilePictureURL(req.UserID, url); err != nil {
 		return nil, ErrSaveFileFailed
 	}
 
 	return &UploadProfilePictureResponse{
 		Message: "Foto atualizada com sucesso",
-		URL:     relativePath,
+		URL:     url,
 	}, nil
 }
 
@@ -97,41 +99,30 @@ func (uc *UploadProfilePictureUseCase) validateFileSize(header *multipart.FileHe
 	return nil
 }
 
-func (uc *UploadProfilePictureUseCase) validateContentType(header *multipart.FileHeader) error {
-	contentType := header.Header.Get("Content-Type")
-	if contentType != "image/jpeg" && contentType != "image/png" {
-		return ErrUnsupportedFileFormat
-	}
-	return nil
-}
-
-func (uc *UploadProfilePictureUseCase) validateFileExtension(filename string) (string, error) {
-	ext := strings.ToLower(filepath.Ext(filename))
-	if ext != ".jpg" && ext != ".jpeg" && ext != ".png" {
+func (uc *UploadProfilePictureUseCase) detectContentType(file multipart.File) (string, error) {
+	buf := make([]byte, 512)
+	n, err := file.Read(buf)
+	if err != nil && err != io.EOF {
 		return "", ErrUnsupportedFileFormat
 	}
-	return ext, nil
+
+	if seeker, ok := file.(io.Seeker); ok {
+		seeker.Seek(0, io.SeekStart)
+	}
+
+	contentType := http.DetectContentType(buf[:n])
+	return contentType, nil
 }
 
-func (uc *UploadProfilePictureUseCase) saveFile(file multipart.File, ext string) (string, error) {
-	dir := filepath.Join(uc.UploadPath, "profile")
-	if err := os.MkdirAll(dir, 0755); err != nil {
-		return "", ErrSaveFileFailed
+func (uc *UploadProfilePictureUseCase) extensionFromContentType(contentType string) string {
+	ct := strings.ToLower(contentType)
+	switch {
+	case strings.HasPrefix(ct, "image/jpeg"):
+		return ".jpg"
+	case strings.HasPrefix(ct, "image/png"):
+		return ".png"
+	default:
+		return ""
 	}
-
-	fileName := fmt.Sprintf("%s%s", uuid.New().String(), ext)
-	fullPath := filepath.Join(dir, fileName)
-
-	dst, err := os.Create(fullPath)
-	if err != nil {
-		return "", ErrSaveFileFailed
-	}
-	defer dst.Close()
-
-	if _, err := io.Copy(dst, file); err != nil {
-		return "", ErrSaveFileFailed
-	}
-
-	relativePath := filepath.Join("/uploads/profile", fileName)
-	return relativePath, nil
 }
+

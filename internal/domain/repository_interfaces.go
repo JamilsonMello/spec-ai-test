@@ -1,5 +1,7 @@
 package domain
 
+import "io"
+
 type UserRepository interface {
 	SaveUser(user *User) error
 	GetUserByEmail(email string) (*User, error)
@@ -37,6 +39,10 @@ type PasswordRecoveryRepository interface {
 	SavePasswordRecovery(recovery *PasswordRecovery) error
 	GetPasswordRecoveryByToken(token string) (*PasswordRecovery, error)
 	UpdatePasswordRecovery(recovery *PasswordRecovery) error
+}
+
+type FileStorage interface {
+	Save(file io.Reader, filename string) (string, error)
 }
 
 type EmailSender interface {
