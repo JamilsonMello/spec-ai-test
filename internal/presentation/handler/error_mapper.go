@@ -42,6 +42,10 @@ func MapErrorToHTTP(err error) (int, string) {
 		return http.StatusForbidden, err.Error()
 	case usecase.ErrUnauthorizedCreateProduct:
 		return http.StatusUnauthorized, err.Error()
+	case usecase.ErrUnauthorizedUpdateProduct:
+		return http.StatusForbidden, err.Error()
+	case domain.ErrProductNotFound:
+		return http.StatusNotFound, err.Error()
 	case domain.ErrInvalidProductName, domain.ErrInvalidProductDescription,
 		domain.ErrInvalidProductPrice, domain.ErrInvalidProductStock,
 		usecase.ErrInvalidProductInput:

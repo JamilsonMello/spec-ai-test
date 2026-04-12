@@ -5,8 +5,24 @@ import (
 	"fmt"
 
 	"github.com/example/cadastro-de-usuarios/internal/domain"
-	"github.com/example/cadastro-de-usuarios/pkg/db/queries"
 )
+
+const insertPostSQL = `
+INSERT INTO posts (id, content, author_id, community_id, created_at)
+VALUES ($1, $2, $3, $4, $5)
+`
+
+const updatePostContentSQL = `
+UPDATE posts
+SET content = $1, updated_at = $2
+WHERE id = $3
+`
+
+const selectPostByIDSQL = `
+SELECT id, content, author_id, created_at, updated_at
+FROM posts
+WHERE id = $1
+`
 
 type PostRepository struct {
 	db *sql.DB
@@ -17,12 +33,11 @@ func NewPostRepository(db *sql.DB) *PostRepository {
 }
 
 func (r *PostRepository) SavePost(post *domain.Post) error {
-	query := `INSERT INTO posts (id, content, author_id, community_id, created_at) VALUES ($1, $2, $3, $4, $5)`
 	var communityID interface{}
 	if post.CommunityID != "" {
 		communityID = post.CommunityID
 	}
-	_, err := r.db.Exec(query, post.ID, post.Content, post.AuthorID, communityID, post.CreatedAt)
+	_, err := r.db.Exec(insertPostSQL, post.ID, post.Content, post.AuthorID, communityID, post.CreatedAt)
 	if err != nil {
 		return fmt.Errorf("failed to save post: %w", err)
 	}
@@ -30,7 +45,7 @@ func (r *PostRepository) SavePost(post *domain.Post) error {
 }
 
 func (r *PostRepository) UpdatePost(post *domain.Post) error {
-	result, err := r.db.Exec(queries.UpdatePostContentSQL, post.Content, post.UpdatedAt, post.ID)
+	result, err := r.db.Exec(updatePostContentSQL, post.Content, post.UpdatedAt, post.ID)
 	if err != nil {
 		return fmt.Errorf("failed to update post: %w", err)
 	}
@@ -46,7 +61,7 @@ func (r *PostRepository) UpdatePost(post *domain.Post) error {
 
 func (r *PostRepository) GetPostByID(id string) (*domain.Post, error) {
 	post := &domain.Post{}
-	err := r.db.QueryRow(queries.SelectPostByIDSQL, id).Scan(
+	err := r.db.QueryRow(selectPostByIDSQL, id).Scan(
 		&post.ID, &post.Content, &post.AuthorID, &post.CreatedAt, &post.UpdatedAt,
 	)
 	if err == sql.ErrNoRows {

@@ -1,0 +1,3 @@
+DROP TABLE IF EXISTS password_recoveries;
+DROP TABLE IF EXISTS posts;
+DROP TABLE IF EXISTS users;
