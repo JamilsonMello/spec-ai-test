@@ -39,6 +39,10 @@ func (s *E2ESuite) SetupSuite() {
 
 	db, err := infrastructure.Connect(dsn)
 	s.Require().NoError(err)
+
+	err = infrastructure.RunMigrations(db)
+	s.Require().NoError(err)
+
 	s.db = db
 
 	s.setupServer()
@@ -108,7 +112,7 @@ func (s *E2ESuite) setupServer() {
 }
 
 func (s *E2ESuite) TearDownTest() {
-	tables := []string{"comment_reactions", "comments", "posts", "communities", "password_recoveries", "users"}
+	tables := []string{"products", "comment_reactions", "comments", "posts", "communities", "password_recoveries", "users"}
 	for _, table := range tables {
 		_, err := s.db.Exec("TRUNCATE TABLE " + table + " CASCADE")
 		s.Require().NoError(err)

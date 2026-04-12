@@ -40,6 +40,12 @@ func MapErrorToHTTP(err error) (int, string) {
 		return http.StatusNotFound, err.Error()
 	case usecase.ErrUnauthorizedRole, usecase.ErrUnauthorizedCreate, usecase.ErrUnauthorizedUpdate:
 		return http.StatusForbidden, err.Error()
+	case usecase.ErrUnauthorizedCreateProduct:
+		return http.StatusUnauthorized, err.Error()
+	case domain.ErrInvalidProductName, domain.ErrInvalidProductDescription,
+		domain.ErrInvalidProductPrice, domain.ErrInvalidProductStock,
+		usecase.ErrInvalidProductInput:
+		return http.StatusBadRequest, err.Error()
 	default:
 		return http.StatusInternalServerError, "Internal server error"
 	}

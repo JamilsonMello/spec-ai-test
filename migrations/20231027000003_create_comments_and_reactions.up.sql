@@ -1,4 +1,3 @@
--- UP
 CREATE TABLE comments (
     id UUID PRIMARY KEY,
     post_id UUID NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
@@ -15,7 +14,3 @@ CREATE TABLE comment_reactions (
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     UNIQUE(comment_id, user_id, reaction_type)
 );
-
--- DOWN
-DROP TABLE IF EXISTS comment_reactions;
-DROP TABLE IF EXISTS comments;

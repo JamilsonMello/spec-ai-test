@@ -4,7 +4,9 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/example/cadastro-de-usuarios/pkg/db/queries"
+	"github.com/golang-migrate/migrate/v4"
+	"github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
 
 func Connect(dsn string) (*sql.DB, error) {
@@ -17,25 +19,27 @@ func Connect(dsn string) (*sql.DB, error) {
 		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 
-	schemas := []string{
-		queries.CreateUsersTableSQL,
-		queries.CreatePostsTableSQL,
-		queries.AddUpdatedAtColumnSQL,
-		queries.CreatePasswordRecoveriesTableSQL,
-	}
-
-	if err := InitSchema(db, schemas); err != nil {
-		return nil, fmt.Errorf("failed to initialize schema: %w", err)
-	}
-
 	return db, nil
 }
 
-func InitSchema(db *sql.DB, schemaSQLs []string) error {
-	for _, schemaSQL := range schemaSQLs {
-		if _, err := db.Exec(schemaSQL); err != nil {
-			return fmt.Errorf("failed to execute schema SQL: %w", err)
-		}
+func RunMigrations(db *sql.DB) error {
+	driver, err := postgres.WithInstance(db, &postgres.Config{})
+	if err != nil {
+		return fmt.Errorf("failed to create migration driver: %w", err)
 	}
+
+	m, err := migrate.NewWithDatabaseInstance(
+		"file://migrations",
+		"postgres",
+		driver,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to create migration instance: %w", err)
+	}
+
+	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+		return fmt.Errorf("failed to run migrations: %w", err)
+	}
+
 	return nil
 }
