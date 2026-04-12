@@ -30,6 +30,7 @@ func main() {
 	commentRepo := repository.NewCommentRepository(db)
 	reactionRepo := repository.NewReactionRepository(db)
 	communityRepo := repository.NewCommunityRepository(db)
+	productRepo := repository.NewProductRepository(db)
 
 	emailSender := service.NewEmailSender()
 	bcryptHasher := service.NewBcryptHasher()
@@ -51,6 +52,7 @@ func main() {
 	listCommentsUC := usecase.NewListCommentsUseCase(commentRepo)
 	toggleReactionUC := usecase.NewToggleCommentReactionUseCase(reactionRepo, commentRepo)
 	createCommunityUC := usecase.NewCreateCommunityUseCase(communityRepo)
+	createProductUC := usecase.NewCreateProductUseCase(productRepo, communityRepo)
 	validateTokenUC := usecase.NewValidateTokenUseCase(jwtValidatorService)
 
 	userHandler := handler.NewUserHandler(registerUserUC, listUsersUC, updateUserProfileUC, deleteUserUC, uploadProfilePictureUC)
@@ -59,6 +61,7 @@ func main() {
 	commentHandler := handler.NewCommentHandler(createCommentUC, listCommentsUC)
 	reactionHandler := handler.NewReactionHandler(toggleReactionUC)
 	communityHandler := handler.NewCommunityHandler(createCommunityUC)
+	productHandler := handler.NewProductHandler(createProductUC)
 
 	e := echo.New()
 
@@ -81,6 +84,7 @@ func main() {
 	protected.POST("/posts/:id/comments", commentHandler.CreateComment)
 	protected.POST("/comments/:id/reactions", reactionHandler.ToggleReaction)
 	protected.POST("/comunidades", communityHandler.CreateCommunity)
+	protected.POST("/products", productHandler.CreateProduct)
 
 	e.GET("/posts/:id/comments", commentHandler.ListComments)
 

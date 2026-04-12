@@ -71,3 +71,7 @@ type UserRepositoryTx interface {
 type PasswordRecoveryRepositoryTx interface {
 	UpdatePasswordRecoveryTx(tx interface{}, recovery *PasswordRecovery) error
 }
+
+type ProductRepository interface {
+	SaveProduct(product *Product) error
+}
