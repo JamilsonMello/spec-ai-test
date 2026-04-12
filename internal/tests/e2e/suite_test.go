@@ -64,7 +64,7 @@ func (s *E2ESuite) setupServer() {
 
 	requestPasswordRecoveryUC := usecase.NewRequestPasswordRecoveryUseCase(userRepo, passwordRecoveryRepo, emailSender)
 	resetPasswordUC := usecase.NewResetPasswordUseCase(userRepo, passwordRecoveryRepo)
-	createPostUC := usecase.NewCreatePostUseCase(postRepo)
+	createPostUC := usecase.NewCreatePostUseCase(postRepo, communityRepo)
 	updatePostUC := usecase.NewUpdatePostUseCase(postRepo)
 	createCommentUC := usecase.NewCreateCommentUseCase(commentRepo)
 	listCommentsUC := usecase.NewListCommentsUseCase(commentRepo)

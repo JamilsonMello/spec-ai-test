@@ -8,10 +8,8 @@ CREATE TABLE communities (
     updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
-ALTER TABLE posts ADD COLUMN community_id UUID;
-ALTER TABLE posts ADD CONSTRAINT fk_community FOREIGN KEY (community_id) REFERENCES communities(id) ON DELETE SET NULL;
+ALTER TABLE posts ADD COLUMN community_id UUID REFERENCES communities(id) ON DELETE SET NULL;
 
 -- DOWN
-ALTER TABLE posts DROP CONSTRAINT IF EXISTS fk_community;
 ALTER TABLE posts DROP COLUMN IF EXISTS community_id;
 DROP TABLE IF EXISTS communities;

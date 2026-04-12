@@ -29,6 +29,10 @@ func MapErrorToHTTP(err error) (int, string) {
 		return http.StatusNotFound, err.Error()
 	case usecase.ErrUnauthorizedComment, usecase.ErrUnauthorizedReaction:
 		return http.StatusUnauthorized, err.Error()
+	case usecase.ErrInvalidUUIDFormat:
+		return http.StatusBadRequest, err.Error()
+	case domain.ErrCommunityNotFound:
+		return http.StatusNotFound, err.Error()
 	case domain.ErrUserNotFound, usecase.ErrUserNotFoundUpdate, usecase.ErrUserNotFound, usecase.ErrUserNotFoundUpload,
 		domain.ErrPostNotFound, domain.ErrRecoveryTokenNotFound, usecase.ErrRecoveryTokenNotFound:
 		return http.StatusNotFound, err.Error()

@@ -17,8 +17,12 @@ func NewPostRepository(db *sql.DB) *PostRepository {
 }
 
 func (r *PostRepository) SavePost(post *domain.Post) error {
-	query := `INSERT INTO posts (id, content, author_id, created_at) VALUES ($1, $2, $3, $4)`
-	_, err := r.db.Exec(query, post.ID, post.Content, post.AuthorID, post.CreatedAt)
+	query := `INSERT INTO posts (id, content, author_id, community_id, created_at) VALUES ($1, $2, $3, $4, $5)`
+	var communityID interface{}
+	if post.CommunityID != "" {
+		communityID = post.CommunityID
+	}
+	_, err := r.db.Exec(query, post.ID, post.Content, post.AuthorID, communityID, post.CreatedAt)
 	if err != nil {
 		return fmt.Errorf("failed to save post: %w", err)
 	}

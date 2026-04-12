@@ -2,6 +2,7 @@ package e2e
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -102,4 +103,69 @@ func (s *E2ESuite) TestUpdatePost_ForbiddenOtherUser() {
 	rec := s.executeRequest(req)
 
 	s.Equal(http.StatusForbidden, rec.Code)
+}
+
+func (s *E2ESuite) createTestCommunity(userID string, name string) string {
+	body := fmt.Sprintf(`{"name":"%s","description":"Test community description"}`, name)
+	req := s.newAuthenticatedRequestWithUserID(http.MethodPost, "/comunidades", body, userID)
+	rec := s.executeRequest(req)
+	s.Require().Equal(http.StatusCreated, rec.Code)
+
+	var resp map[string]interface{}
+	err := json.Unmarshal(rec.Body.Bytes(), &resp)
+	s.Require().NoError(err)
+
+	return resp["id"].(string)
+}
+
+func (s *E2ESuite) TestCreatePost_WithCommunity_Success() {
+	userID := s.createTestUser("Community Post Author", "Test", "communitypost@test.com", "1990-01-01")
+	communityID := s.createTestCommunity(userID, "Post Community")
+
+	body := fmt.Sprintf(`{"content":"Post in community","community_id":"%s"}`, communityID)
+	req := s.newAuthenticatedRequestWithUserID(http.MethodPost, "/posts", body, userID)
+	req.Header.Set("X-User-ID", userID)
+	rec := s.executeRequest(req)
+
+	s.Equal(http.StatusCreated, rec.Code)
+
+	var resp map[string]interface{}
+	err := json.Unmarshal(rec.Body.Bytes(), &resp)
+	s.NoError(err)
+	s.NotEmpty(resp["id"])
+	s.Equal("Post in community", resp["content"])
+	s.Equal(communityID, resp["community_id"])
+}
+
+func (s *E2ESuite) TestCreatePost_WithNonExistentCommunity_NotFound() {
+	userID := s.createTestUser("NotFound Author", "Test", "notfoundcommunity@test.com", "1990-01-01")
+	fakeCommunityID := uuid.New().String()
+
+	body := fmt.Sprintf(`{"content":"Post in fake community","community_id":"%s"}`, fakeCommunityID)
+	req := s.newAuthenticatedRequestWithUserID(http.MethodPost, "/posts", body, userID)
+	req.Header.Set("X-User-ID", userID)
+	rec := s.executeRequest(req)
+
+	s.Equal(http.StatusNotFound, rec.Code)
+
+	var resp map[string]interface{}
+	err := json.Unmarshal(rec.Body.Bytes(), &resp)
+	s.NoError(err)
+	s.Equal("community_not_found", resp["error"])
+}
+
+func (s *E2ESuite) TestCreatePost_WithInvalidCommunityUUID_BadRequest() {
+	userID := s.createTestUser("Invalid UUID Author", "Test", "invaliduuid@test.com", "1990-01-01")
+
+	body := `{"content":"Post with bad uuid","community_id":"not-a-valid-uuid"}`
+	req := s.newAuthenticatedRequestWithUserID(http.MethodPost, "/posts", body, userID)
+	req.Header.Set("X-User-ID", userID)
+	rec := s.executeRequest(req)
+
+	s.Equal(http.StatusBadRequest, rec.Code)
+
+	var resp map[string]interface{}
+	err := json.Unmarshal(rec.Body.Bytes(), &resp)
+	s.NoError(err)
+	s.Equal("invalid_uuid_format", resp["error"])
 }

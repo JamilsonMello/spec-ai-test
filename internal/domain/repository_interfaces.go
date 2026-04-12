@@ -38,6 +38,7 @@ type ReactionRepository interface {
 type CommunityRepository interface {
 	SaveCommunity(community *Community) error
 	ExistsByName(name string) (bool, error)
+	ExistsByID(id string) (bool, error)
 }
 
 type PasswordRecoveryRepository interface {
