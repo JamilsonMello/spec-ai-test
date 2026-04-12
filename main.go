@@ -28,6 +28,7 @@ func main() {
 	postRepo := repository.NewPostRepository(db)
 	commentRepo := repository.NewCommentRepository(db)
 	reactionRepo := repository.NewReactionRepository(db)
+	communityRepo := repository.NewCommunityRepository(db)
 
 	emailSender := service.NewEmailSender()
 	jwtValidatorService := service.NewJWTValidatorService()
@@ -46,6 +47,7 @@ func main() {
 	createCommentUC := usecase.NewCreateCommentUseCase(commentRepo)
 	listCommentsUC := usecase.NewListCommentsUseCase(commentRepo)
 	toggleReactionUC := usecase.NewToggleCommentReactionUseCase(reactionRepo, commentRepo)
+	createCommunityUC := usecase.NewCreateCommunityUseCase(communityRepo)
 	validateTokenUC := usecase.NewValidateTokenUseCase(jwtValidatorService)
 
 	userHandler := handler.NewUserHandler(registerUserUC, listUsersUC, updateUserProfileUC, deleteUserUC, uploadProfilePictureUC)
@@ -53,6 +55,7 @@ func main() {
 	postHandler := handler.NewPostHandler(createPostUC, updatePostUC)
 	commentHandler := handler.NewCommentHandler(createCommentUC, listCommentsUC)
 	reactionHandler := handler.NewReactionHandler(toggleReactionUC)
+	communityHandler := handler.NewCommunityHandler(createCommunityUC)
 
 	e := echo.New()
 
@@ -73,6 +76,7 @@ func main() {
 	protected.PUT("/posts/:id", postHandler.UpdatePost)
 	protected.POST("/posts/:id/comments", commentHandler.CreateComment)
 	protected.POST("/comments/:id/reactions", reactionHandler.ToggleReaction)
+	protected.POST("/comunidades", communityHandler.CreateCommunity)
 
 	e.GET("/posts/:id/comments", commentHandler.ListComments)
 

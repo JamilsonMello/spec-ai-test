@@ -35,6 +35,11 @@ type ReactionRepository interface {
 	DeleteReaction(id string) error
 }
 
+type CommunityRepository interface {
+	SaveCommunity(community *Community) error
+	ExistsByName(name string) (bool, error)
+}
+
 type PasswordRecoveryRepository interface {
 	SavePasswordRecovery(recovery *PasswordRecovery) error
 	GetPasswordRecoveryByToken(token string) (*PasswordRecovery, error)
