@@ -102,22 +102,22 @@ Do NOT mark COMPLETE until every requirement is verified.
 
 ## Existing features (do NOT recreate — reuse)
 ### Estrutura de Arquitetura Limpa (Go)
-- Entities: Domínio e interfaces de repositório em `internal/domain`.
+- Entities: Domínio e interfaces em `internal/domain`.
 - Use Cases: Lógica de negócio e DTOs em `internal/application`.
 - Endpoints: Handlers HTTP e middlewares em `internal/presentation`.
-- Gateways: Implementações de banco de dados e adaptadores em `internal/infrastructure`.
+- Gateways: Implementações de persistência e adaptadores em `internal/infrastructure`.
 
 ### Cadastro e Gerenciamento de Usuários
 - Entities: `User` (id, name, surname, email, birth_date, password, role, ProfilePictureURL).
 - Use Cases: Validação de idade (18+), e-mail único, formato de senha (8+ chars).
 - Endpoints: POST /usuarios, GET /usuarios/listar, GET /usuarios/:id, PATCH /usuarios/:id, PUT /usuarios/:id/foto-perfil, POST /users/:id/upload-picture, DELETE /usuarios/:id.
-- Gateways: `PostgreSQLUserRepository`, `LocalFileSystem`, `FileStorage` (interface).
+- Gateways: `PostgreSQLUserRepository`, `LocalFileSystem`, `FileStorage`.
 
 ### Upload e Persistência de Posts
 - Entities: `Post` (id, user_id, title, content, VideoURL, community_id).
-- Use Cases: Validação de autorização, tamanho (50MB), tipo (mp4/mov), título (5-100 chars), associação opcional com comunidade.
+- Use Cases: Validação de autorização, tamanho (50MB), tipo (mp4/mov), título (5-100 chars), validação de existência de comunidade (UUID v4).
 - Endpoints: POST /posts, GET /posts, GET /posts/:id, POST /posts/:id/video, PUT /posts/:id.
-- Gateways: `FileStorageService`, `PostRepository`.
+- Gateways: `FileStorageService`, `PostRepository`, `CommunityRepository`.
 
 ### Segurança e Recuperação de Senha
 - Entities: `PasswordRecovery` (id, user_id, token, expires_at).
@@ -131,7 +131,7 @@ Do NOT mark COMPLETE until every requirement is verified.
 - Endpoints: POST /posts/:id/comments, GET /posts/:id/comments, POST /comments/:id/reactions.
 - Gateways: `CommentRepository`, `ReactionRepository`.
 
-### Criação de Comunidades
+### Criação e Gestão de Comunidades
 ...(truncated)
 
 
@@ -140,6 +140,12 @@ The project owner has defined the following rules. You MUST follow them during i
 These rules take precedence over general guidelines when there is a conflict.
 
 - sempre use a arquitetura limpa
+
+## Known Build Issues (from previous attempts in this project)
+Previous builds have failed with these issues. Pay extra attention:
+- Database Migration: A migração migrations/202310270003_create_communities_and_link_to_posts.sql não foi atualizada para incluir a coluna community_id na tabela posts. É necessário criar ou editar o arquivo de migração para adicionar a coluna: ALTER TABLE posts ADD COLUMN community_id UUID REFERENCES communities(id) ON DELETE SET NULL;
+- Database Migration: O arquivo de migração migrations/202310270003_create_communities_and_link_to_posts.sql não foi modificado para incluir a coluna community_id na tabela posts com a devida FK. O diff mostra a alteração no código Go (SavePost), mas a mudança no esquema do banco de dados é necessária para persistência real. Adicione ALTER TABLE posts ADD COLUMN community_id UUID REFERENCES communities(id) ao arquivo de migração.
+- Database Migration: The file migrations/202310270003_create_communities_and_link_to_posts.sql is not present in the diff. You must ensure this file exists and contains: ALTER TABLE posts ADD COLUMN community_id UUID REFERENCES communities(id) ON DELETE SET NULL;
 
 ## Context compaction
 Preserve: spec (.spec-ai/spec.md), plan (.spec-ai/plan.md), reference (.spec-ai/reference.md), commands above, and which files were created/modified.
