@@ -25,6 +25,8 @@ func main() {
 	userRepo := repository.NewUserRepository(db)
 	passwordRecoveryRepo := repository.NewPasswordRecoveryRepository(db)
 	postRepo := repository.NewPostRepository(db)
+	commentRepo := repository.NewCommentRepository(db)
+	reactionRepo := repository.NewReactionRepository(db)
 
 	emailSender := service.NewEmailSender()
 	jwtValidatorService := service.NewJWTValidatorService()
@@ -39,11 +41,16 @@ func main() {
 	resetPasswordUC := usecase.NewResetPasswordUseCase(userRepo, passwordRecoveryRepo)
 	createPostUC := usecase.NewCreatePostUseCase(postRepo)
 	updatePostUC := usecase.NewUpdatePostUseCase(postRepo)
+	createCommentUC := usecase.NewCreateCommentUseCase(commentRepo)
+	listCommentsUC := usecase.NewListCommentsUseCase(commentRepo)
+	toggleReactionUC := usecase.NewToggleCommentReactionUseCase(reactionRepo, commentRepo)
 	validateTokenUC := usecase.NewValidateTokenUseCase(jwtValidatorService)
 
 	userHandler := handler.NewUserHandler(registerUserUC, listUsersUC, updateUserProfileUC, deleteUserUC, uploadProfilePictureUC)
 	passwordRecoveryHandler := handler.NewPasswordRecoveryHandler(requestPasswordRecoveryUC, resetPasswordUC)
 	postHandler := handler.NewPostHandler(createPostUC, updatePostUC)
+	commentHandler := handler.NewCommentHandler(createCommentUC, listCommentsUC)
+	reactionHandler := handler.NewReactionHandler(toggleReactionUC)
 
 	e := echo.New()
 
@@ -62,6 +69,10 @@ func main() {
 	protected.POST("/usuarios/:id/foto-perfil", userHandler.UploadProfilePicture)
 	protected.POST("/posts", postHandler.CreatePost)
 	protected.PUT("/posts/:id", postHandler.UpdatePost)
+	protected.POST("/posts/:id/comments", commentHandler.CreateComment)
+	protected.POST("/comments/:id/reactions", reactionHandler.ToggleReaction)
+
+	e.GET("/posts/:id/comments", commentHandler.ListComments)
 
 	port := ":8080"
 	log.Printf("Server listening on port %s\n", port)

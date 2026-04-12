@@ -21,6 +21,12 @@ func MapErrorToHTTP(err error) (int, string) {
 		return http.StatusUnprocessableEntity, err.Error()
 	case domain.ErrEmailAlreadyExists, usecase.ErrEmailInUse:
 		return http.StatusBadRequest, err.Error()
+	case usecase.ErrInvalidCommentContent, usecase.ErrInvalidReactionType:
+		return http.StatusBadRequest, err.Error()
+	case usecase.ErrCommentNotFoundToggle, domain.ErrCommentNotFound:
+		return http.StatusNotFound, err.Error()
+	case usecase.ErrUnauthorizedComment, usecase.ErrUnauthorizedReaction:
+		return http.StatusUnauthorized, err.Error()
 	case domain.ErrUserNotFound, usecase.ErrUserNotFoundUpdate, usecase.ErrUserNotFound, usecase.ErrUserNotFoundUpload,
 		domain.ErrPostNotFound, domain.ErrRecoveryTokenNotFound, usecase.ErrRecoveryTokenNotFound:
 		return http.StatusNotFound, err.Error()

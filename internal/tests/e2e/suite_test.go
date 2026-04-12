@@ -45,6 +45,8 @@ func (s *E2ESuite) setupServer() {
 	userRepo := repository.NewUserRepository(s.db)
 	passwordRecoveryRepo := repository.NewPasswordRecoveryRepository(s.db)
 	postRepo := repository.NewPostRepository(s.db)
+	commentRepo := repository.NewCommentRepository(s.db)
+	reactionRepo := repository.NewReactionRepository(s.db)
 
 	emailSender := service.NewEmailSender()
 	jwtValidatorService := service.NewJWTValidatorService()
@@ -59,11 +61,16 @@ func (s *E2ESuite) setupServer() {
 	resetPasswordUC := usecase.NewResetPasswordUseCase(userRepo, passwordRecoveryRepo)
 	createPostUC := usecase.NewCreatePostUseCase(postRepo)
 	updatePostUC := usecase.NewUpdatePostUseCase(postRepo)
+	createCommentUC := usecase.NewCreateCommentUseCase(commentRepo)
+	listCommentsUC := usecase.NewListCommentsUseCase(commentRepo)
+	toggleReactionUC := usecase.NewToggleCommentReactionUseCase(reactionRepo, commentRepo)
 	validateTokenUC := usecase.NewValidateTokenUseCase(jwtValidatorService)
 
 	userHandler := handler.NewUserHandler(registerUserUC, listUsersUC, updateUserProfileUC, deleteUserUC, uploadProfilePictureUC)
 	passwordRecoveryHandler := handler.NewPasswordRecoveryHandler(requestPasswordRecoveryUC, resetPasswordUC)
 	postHandler := handler.NewPostHandler(createPostUC, updatePostUC)
+	commentHandler := handler.NewCommentHandler(createCommentUC, listCommentsUC)
+	reactionHandler := handler.NewReactionHandler(toggleReactionUC)
 
 	e := echo.New()
 
@@ -82,12 +89,16 @@ func (s *E2ESuite) setupServer() {
 	protected.POST("/usuarios/:id/foto-perfil", userHandler.UploadProfilePicture)
 	protected.POST("/posts", postHandler.CreatePost)
 	protected.PUT("/posts/:id", postHandler.UpdatePost)
+	protected.POST("/posts/:id/comments", commentHandler.CreateComment)
+	protected.POST("/comments/:id/reactions", reactionHandler.ToggleReaction)
+
+	e.GET("/posts/:id/comments", commentHandler.ListComments)
 
 	s.echo = e
 }
 
 func (s *E2ESuite) TearDownTest() {
-	tables := []string{"posts", "password_recoveries", "users"}
+	tables := []string{"comment_reactions", "comments", "posts", "password_recoveries", "users"}
 	for _, table := range tables {
 		_, err := s.db.Exec("TRUNCATE TABLE " + table + " CASCADE")
 		s.Require().NoError(err)

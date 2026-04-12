@@ -21,6 +21,18 @@ type PostRepository interface {
 	UpdatePost(post *Post) error
 }
 
+type CommentRepository interface {
+	SaveComment(comment *Comment) error
+	GetCommentsByPostID(postID string) ([]*Comment, error)
+	GetCommentByID(id string) (*Comment, error)
+}
+
+type ReactionRepository interface {
+	GetReactionByCommentAndUser(commentID, userID, reactionType string) (*Reaction, error)
+	SaveReaction(reaction *Reaction) error
+	DeleteReaction(id string) error
+}
+
 type PasswordRecoveryRepository interface {
 	SavePasswordRecovery(recovery *PasswordRecovery) error
 	GetPasswordRecoveryByToken(token string) (*PasswordRecovery, error)
