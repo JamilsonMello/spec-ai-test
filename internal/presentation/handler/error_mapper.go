@@ -9,7 +9,9 @@ import (
 
 func MapErrorToHTTP(err error) (int, string) {
 	switch err {
-	case usecase.ErrFileTooLarge, usecase.ErrUnsupportedFileFormat:
+	case usecase.ErrFileTooLarge:
+		return http.StatusRequestEntityTooLarge, err.Error()
+	case usecase.ErrUnsupportedFileFormat:
 		return http.StatusBadRequest, err.Error()
 	case usecase.ErrSaveFileFailed:
 		return http.StatusInternalServerError, err.Error()
