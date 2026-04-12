@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"os"
+	"time"
 
 	"github.com/labstack/echo/v4"
 	_ "github.com/lib/pq"
@@ -31,6 +32,8 @@ func main() {
 	communityRepo := repository.NewCommunityRepository(db)
 
 	emailSender := service.NewEmailSender()
+	bcryptHasher := service.NewBcryptHasher()
+	txManager := infrastructure.NewSQLTransactionManager(db)
 	jwtValidatorService := service.NewJWTValidatorService()
 
 	registerUserUC := usecase.NewRegisterUserUseCase(userRepo)
@@ -41,7 +44,7 @@ func main() {
 	uploadProfilePictureUC := usecase.NewUploadProfilePictureUseCase(userRepo, localStorage)
 
 	requestPasswordRecoveryUC := usecase.NewRequestPasswordRecoveryUseCase(userRepo, passwordRecoveryRepo, emailSender)
-	resetPasswordUC := usecase.NewResetPasswordUseCase(userRepo, passwordRecoveryRepo)
+	resetPasswordUC := usecase.NewResetPasswordUseCase(userRepo, userRepo, passwordRecoveryRepo, passwordRecoveryRepo, bcryptHasher, txManager)
 	createPostUC := usecase.NewCreatePostUseCase(postRepo, communityRepo)
 	updatePostUC := usecase.NewUpdatePostUseCase(postRepo)
 	createCommentUC := usecase.NewCreateCommentUseCase(commentRepo)
@@ -62,7 +65,8 @@ func main() {
 	e.Static("/uploads", "./uploads")
 
 	e.POST("/usuarios", userHandler.RegisterUser)
-	e.POST("/password-recovery", passwordRecoveryHandler.RequestPasswordRecovery)
+	rateLimiter := middleware.RateLimitMiddleware(5, 1*time.Minute)
+	e.POST("/password-recovery", passwordRecoveryHandler.RequestPasswordRecovery, rateLimiter)
 	e.POST("/password-recovery/reset", passwordRecoveryHandler.ResetPassword)
 
 	protected := e.Group("")
