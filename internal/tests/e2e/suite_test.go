@@ -55,6 +55,7 @@ func (s *E2ESuite) setupServer() {
 	commentRepo := repository.NewCommentRepository(s.db)
 	reactionRepo := repository.NewReactionRepository(s.db)
 	communityRepo := repository.NewCommunityRepository(s.db)
+	productRepo := repository.NewProductRepository(s.db)
 
 	emailSender := service.NewEmailSender()
 	bcryptHasher := service.NewBcryptHasher()
@@ -76,6 +77,8 @@ func (s *E2ESuite) setupServer() {
 	listCommentsUC := usecase.NewListCommentsUseCase(commentRepo)
 	toggleReactionUC := usecase.NewToggleCommentReactionUseCase(reactionRepo, commentRepo)
 	createCommunityUC := usecase.NewCreateCommunityUseCase(communityRepo)
+	createProductUC := usecase.NewCreateProductUseCase(productRepo, communityRepo)
+	updateProductUC := usecase.NewUpdateProductUseCase(productRepo)
 	validateTokenUC := usecase.NewValidateTokenUseCase(jwtValidatorService)
 
 	userHandler := handler.NewUserHandler(registerUserUC, listUsersUC, updateUserProfileUC, deleteUserUC, uploadProfilePictureUC)
@@ -84,6 +87,7 @@ func (s *E2ESuite) setupServer() {
 	commentHandler := handler.NewCommentHandler(createCommentUC, listCommentsUC)
 	reactionHandler := handler.NewReactionHandler(toggleReactionUC)
 	communityHandler := handler.NewCommunityHandler(createCommunityUC)
+	productHandler := handler.NewProductHandler(createProductUC, updateProductUC)
 
 	e := echo.New()
 
@@ -105,6 +109,8 @@ func (s *E2ESuite) setupServer() {
 	protected.POST("/posts/:id/comments", commentHandler.CreateComment)
 	protected.POST("/comments/:id/reactions", reactionHandler.ToggleReaction)
 	protected.POST("/comunidades", communityHandler.CreateCommunity)
+	protected.POST("/products", productHandler.CreateProduct)
+	protected.PUT("/products/:id", productHandler.UpdateProduct)
 
 	e.GET("/posts/:id/comments", commentHandler.ListComments)
 

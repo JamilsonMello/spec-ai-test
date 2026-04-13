@@ -57,6 +57,7 @@ func main() {
 	toggleReactionUC := usecase.NewToggleCommentReactionUseCase(reactionRepo, commentRepo)
 	createCommunityUC := usecase.NewCreateCommunityUseCase(communityRepo)
 	createProductUC := usecase.NewCreateProductUseCase(productRepo, communityRepo)
+	updateProductUC := usecase.NewUpdateProductUseCase(productRepo)
 	validateTokenUC := usecase.NewValidateTokenUseCase(jwtValidatorService)
 
 	userHandler := handler.NewUserHandler(registerUserUC, listUsersUC, updateUserProfileUC, deleteUserUC, uploadProfilePictureUC)
@@ -65,7 +66,7 @@ func main() {
 	commentHandler := handler.NewCommentHandler(createCommentUC, listCommentsUC)
 	reactionHandler := handler.NewReactionHandler(toggleReactionUC)
 	communityHandler := handler.NewCommunityHandler(createCommunityUC)
-	productHandler := handler.NewProductHandler(createProductUC)
+	productHandler := handler.NewProductHandler(createProductUC, updateProductUC)
 
 	e := echo.New()
 
@@ -89,6 +90,7 @@ func main() {
 	protected.POST("/comments/:id/reactions", reactionHandler.ToggleReaction)
 	protected.POST("/comunidades", communityHandler.CreateCommunity)
 	protected.POST("/products", productHandler.CreateProduct)
+	protected.PUT("/products/:id", productHandler.UpdateProduct)
 
 	e.GET("/posts/:id/comments", commentHandler.ListComments)
 

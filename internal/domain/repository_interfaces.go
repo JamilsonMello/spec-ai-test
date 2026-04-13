@@ -74,4 +74,6 @@ type PasswordRecoveryRepositoryTx interface {
 
 type ProductRepository interface {
 	SaveProduct(product *Product) error
+	GetProductByID(id string) (*Product, error)
+	UpdateProduct(product *Product) error
 }
