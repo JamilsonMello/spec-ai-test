@@ -14,4 +14,5 @@ var (
 	ErrInvalidProductDescription = errors.New("invalid product description")
 	ErrInvalidProductPrice       = errors.New("invalid product price")
 	ErrInvalidProductStock       = errors.New("invalid product stock")
+	ErrProductNotFound           = errors.New("Product not found")
 )
