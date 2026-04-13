@@ -15,7 +15,7 @@ func MapErrorToHTTP(err error) (int, string) {
 		return http.StatusBadRequest, err.Error()
 	case usecase.ErrSaveFileFailed:
 		return http.StatusInternalServerError, err.Error()
-	case usecase.ErrInvalidToken, usecase.ErrPasswordTooShort:
+	case usecase.ErrInvalidToken, usecase.ErrPasswordTooShort, usecase.ErrInvalidPassword:
 		return http.StatusBadRequest, err.Error()
 	case usecase.ErrInvalidName, usecase.ErrInvalidSurname, usecase.ErrInvalidEmail,
 		usecase.ErrInvalidBirthDate, usecase.ErrUserTooYoung, usecase.ErrFutureBirthDate,
@@ -24,7 +24,7 @@ func MapErrorToHTTP(err error) (int, string) {
 		usecase.ErrPasswordMismatch:
 		return http.StatusUnprocessableEntity, err.Error()
 	case domain.ErrEmailAlreadyExists, usecase.ErrEmailInUse:
-		return http.StatusBadRequest, err.Error()
+		return http.StatusConflict, err.Error()
 	case usecase.ErrInvalidCommentContent, usecase.ErrInvalidReactionType:
 		return http.StatusBadRequest, err.Error()
 	case usecase.ErrCommentNotFoundToggle, domain.ErrCommentNotFound:

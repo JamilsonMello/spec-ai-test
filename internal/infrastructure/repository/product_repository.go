@@ -22,6 +22,10 @@ const updateProductSQL = `
 UPDATE products SET name = $1, description = $2, price = $3, stock = $4 WHERE id = $5
 `
 
+const deleteProductSQL = `
+DELETE FROM products WHERE id = $1 AND seller_id = $2
+`
+
 type ProductRepository struct {
 	db *sql.DB
 }
@@ -54,6 +58,21 @@ func (r *ProductRepository) UpdateProduct(product *domain.Product) error {
 	result, err := r.db.Exec(updateProductSQL, product.Name, product.Description, product.Price, product.Stock, product.ID)
 	if err != nil {
 		return fmt.Errorf("failed to update product: %w", err)
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to check rows affected: %w", err)
+	}
+	if affected == 0 {
+		return domain.ErrProductNotFound
+	}
+	return nil
+}
+
+func (r *ProductRepository) DeleteProduct(id string, sellerID string) error {
+	result, err := r.db.Exec(deleteProductSQL, id, sellerID)
+	if err != nil {
+		return fmt.Errorf("failed to delete product: %w", err)
 	}
 	affected, err := result.RowsAffected()
 	if err != nil {

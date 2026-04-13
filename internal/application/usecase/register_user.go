@@ -19,11 +19,16 @@ var (
 	ErrFutureBirthDate  = errors.New("data de nascimento não pode ser no futuro")
 )
 
+var (
+	ErrInvalidPassword = errors.New("senha deve ter no mínimo 8 caracteres")
+)
+
 type RegisterUserRequest struct {
 	Name      string `json:"name"`
 	Surname   string `json:"surname"`
 	Email     string `json:"email"`
 	BirthDate string `json:"birthDate"`
+	Password  string `json:"password"`
 }
 
 type RegisterUserResponse struct {
@@ -36,11 +41,13 @@ type RegisterUserResponse struct {
 
 type RegisterUserUseCase struct {
 	UserRepository domain.UserRepository
+	PasswordHasher domain.PasswordHasher
 }
 
-func NewRegisterUserUseCase(repo domain.UserRepository) *RegisterUserUseCase {
+func NewRegisterUserUseCase(repo domain.UserRepository, hasher domain.PasswordHasher) *RegisterUserUseCase {
 	return &RegisterUserUseCase{
 		UserRepository: repo,
+		PasswordHasher: hasher,
 	}
 }
 
@@ -50,6 +57,10 @@ func (uc *RegisterUserUseCase) Execute(req RegisterUserRequest) (*RegisterUserRe
 		return nil, err
 	}
 
+	if !user.IsValidPassword(req.Password) {
+		return nil, ErrInvalidPassword
+	}
+
 	if err := uc.validateUser(user); err != nil {
 		return nil, err
 	}
@@ -57,6 +68,12 @@ func (uc *RegisterUserUseCase) Execute(req RegisterUserRequest) (*RegisterUserRe
 	if err := uc.checkEmailUniqueness(user.Email); err != nil {
 		return nil, err
 	}
+
+	hashedPassword, err := uc.PasswordHasher.Hash(req.Password)
+	if err != nil {
+		return nil, err
+	}
+	user.Password = hashedPassword
 
 	user.ID = uuid.New().String()
 

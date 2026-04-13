@@ -10,6 +10,7 @@ import (
 
 	"github.com/example/cadastro-de-usuarios/internal/application/usecase"
 	"github.com/example/cadastro-de-usuarios/internal/infrastructure"
+	"github.com/example/cadastro-de-usuarios/internal/infrastructure/auth"
 	"github.com/example/cadastro-de-usuarios/internal/infrastructure/repository"
 	"github.com/example/cadastro-de-usuarios/internal/infrastructure/service"
 	"github.com/example/cadastro-de-usuarios/internal/infrastructure/storage"
@@ -40,8 +41,9 @@ func main() {
 	bcryptHasher := service.NewBcryptHasher()
 	txManager := infrastructure.NewSQLTransactionManager(db)
 	jwtValidatorService := service.NewJWTValidatorService()
+	jwtProvider := auth.NewJWTProvider(os.Getenv("JWT_SECRET"))
 
-	registerUserUC := usecase.NewRegisterUserUseCase(userRepo)
+	registerUserUC := usecase.NewRegisterUserUseCase(userRepo, bcryptHasher)
 	listUsersUC := usecase.NewListUsersUseCase(userRepo)
 	deleteUserUC := usecase.NewDeleteUserUseCase(userRepo)
 	updateUserProfileUC := usecase.NewUpdateUserProfileUseCase(userRepo)
@@ -58,21 +60,26 @@ func main() {
 	createCommunityUC := usecase.NewCreateCommunityUseCase(communityRepo)
 	createProductUC := usecase.NewCreateProductUseCase(productRepo, communityRepo)
 	updateProductUC := usecase.NewUpdateProductUseCase(productRepo)
+	deleteProductUC := usecase.NewDeleteProductUseCase(productRepo)
 	validateTokenUC := usecase.NewValidateTokenUseCase(jwtValidatorService)
 
+	loginUC := usecase.NewLoginUseCase(userRepo, bcryptHasher, jwtProvider)
+
 	userHandler := handler.NewUserHandler(registerUserUC, listUsersUC, updateUserProfileUC, deleteUserUC, uploadProfilePictureUC)
+	authHandler := handler.NewAuthHandler(loginUC)
 	passwordRecoveryHandler := handler.NewPasswordRecoveryHandler(requestPasswordRecoveryUC, resetPasswordUC)
 	postHandler := handler.NewPostHandler(createPostUC, updatePostUC)
 	commentHandler := handler.NewCommentHandler(createCommentUC, listCommentsUC)
 	reactionHandler := handler.NewReactionHandler(toggleReactionUC)
 	communityHandler := handler.NewCommunityHandler(createCommunityUC)
-	productHandler := handler.NewProductHandler(createProductUC, updateProductUC)
+	productHandler := handler.NewProductHandler(createProductUC, updateProductUC, deleteProductUC)
 
 	e := echo.New()
 
 	e.Static("/uploads", "./uploads")
 
 	e.POST("/usuarios", userHandler.RegisterUser)
+	e.POST("/login", authHandler.Login)
 	rateLimiter := middleware.RateLimitMiddleware(5, 1*time.Minute)
 	e.POST("/password-recovery", passwordRecoveryHandler.RequestPasswordRecovery, rateLimiter)
 	e.POST("/password-recovery/reset", passwordRecoveryHandler.ResetPassword)
@@ -91,6 +98,7 @@ func main() {
 	protected.POST("/comunidades", communityHandler.CreateCommunity)
 	protected.POST("/products", productHandler.CreateProduct)
 	protected.PUT("/products/:id", productHandler.UpdateProduct)
+	protected.DELETE("/products/:id", productHandler.DeleteProduct)
 
 	e.GET("/posts/:id/comments", commentHandler.ListComments)
 
