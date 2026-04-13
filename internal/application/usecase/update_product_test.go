@@ -31,6 +31,11 @@ func (m *MockProductRepository) UpdateProduct(product *domain.Product) error {
 	return args.Error(0)
 }
 
+func (m *MockProductRepository) DeleteProduct(id string, sellerID string) error {
+	args := m.Called(id, sellerID)
+	return args.Error(0)
+}
+
 func TestUpdateProduct_Success(t *testing.T) {
 	mockRepo := new(MockProductRepository)
 	uc := NewUpdateProductUseCase(mockRepo)

@@ -12,12 +12,14 @@ import (
 type ProductHandler struct {
 	CreateProductUseCase *usecase.CreateProductUseCase
 	UpdateProductUseCase *usecase.UpdateProductUseCase
+	DeleteProductUseCase *usecase.DeleteProductUseCase
 }
 
-func NewProductHandler(createProductUC *usecase.CreateProductUseCase, updateProductUC *usecase.UpdateProductUseCase) *ProductHandler {
+func NewProductHandler(createProductUC *usecase.CreateProductUseCase, updateProductUC *usecase.UpdateProductUseCase, deleteProductUC *usecase.DeleteProductUseCase) *ProductHandler {
 	return &ProductHandler{
 		CreateProductUseCase: createProductUC,
 		UpdateProductUseCase: updateProductUC,
+		DeleteProductUseCase: deleteProductUC,
 	}
 }
 
@@ -88,4 +90,30 @@ func (h *ProductHandler) UpdateProduct(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, resp)
+}
+
+func (h *ProductHandler) DeleteProduct(c echo.Context) error {
+	userID, ok := c.Get("user_id").(string)
+	if !ok || userID == "" {
+		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Unauthorized"})
+	}
+
+	productID := c.Param("id")
+	if productID == "" {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid ID format"})
+	}
+
+	err := h.DeleteProductUseCase.Execute(productID, userID)
+	if err != nil {
+		switch err {
+		case domain.ErrProductNotFound:
+			return c.JSON(http.StatusNotFound, map[string]string{"error": "Product not found"})
+		case usecase.ErrForbiddenDeleteProduct:
+			return c.JSON(http.StatusForbidden, map[string]string{"error": "Forbidden: product ownership required"})
+		default:
+			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Internal server error"})
+		}
+	}
+
+	return c.NoContent(http.StatusNoContent)
 }

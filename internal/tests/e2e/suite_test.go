@@ -79,31 +79,36 @@ func (s *E2ESuite) setupServer() {
 	createCommunityUC := usecase.NewCreateCommunityUseCase(communityRepo)
 	createProductUC := usecase.NewCreateProductUseCase(productRepo, communityRepo)
 	updateProductUC := usecase.NewUpdateProductUseCase(productRepo)
+	deleteProductUC := usecase.NewDeleteProductUseCase(productRepo)
 	validateTokenUC := usecase.NewValidateTokenUseCase(jwtValidatorService)
 
-	userHandler := handler.NewUserHandler(registerUserUC, listUsersUC, updateUserProfileUC, deleteUserUC, uploadProfilePictureUC)
+	registerUserHandler := handler.NewRegisterUserHandler(registerUserUC)
+	listUsersHandler := handler.NewListUsersHandler(listUsersUC)
+	deleteUserHandler := handler.NewDeleteUserHandler(deleteUserUC)
+	updateUserProfileHandler := handler.NewUpdateUserProfileHandler(updateUserProfileUC)
+	uploadProfilePictureHandler := handler.NewUploadProfilePictureHandler(uploadProfilePictureUC)
 	passwordRecoveryHandler := handler.NewPasswordRecoveryHandler(requestPasswordRecoveryUC, resetPasswordUC)
 	postHandler := handler.NewPostHandler(createPostUC, updatePostUC)
 	commentHandler := handler.NewCommentHandler(createCommentUC, listCommentsUC)
 	reactionHandler := handler.NewReactionHandler(toggleReactionUC)
 	communityHandler := handler.NewCommunityHandler(createCommunityUC)
-	productHandler := handler.NewProductHandler(createProductUC, updateProductUC)
+	productHandler := handler.NewProductHandler(createProductUC, updateProductUC, deleteProductUC)
 
 	e := echo.New()
 
 	e.Static("/uploads", "./uploads")
 
-	e.POST("/usuarios", userHandler.RegisterUser)
+	e.POST("/users", registerUserHandler.RegisterUser)
 	e.POST("/password-recovery", passwordRecoveryHandler.RequestPasswordRecovery)
 	e.POST("/password-recovery/reset", passwordRecoveryHandler.ResetPassword)
 
 	protected := e.Group("")
 	protected.Use(middleware.AuthMiddleware(validateTokenUC))
 
-	protected.GET("/usuarios/listar", userHandler.ListUsers)
-	protected.DELETE("/usuarios/:id", userHandler.DeleteUser)
-	protected.PUT("/usuarios/:id", userHandler.UpdateUserProfile)
-	protected.POST("/usuarios/:id/foto-perfil", userHandler.UploadProfilePicture)
+	protected.GET("/users", listUsersHandler.ListUsers)
+	protected.DELETE("/users/:id", deleteUserHandler.DeleteUser)
+	protected.PUT("/users/:id", updateUserProfileHandler.UpdateUserProfile)
+	protected.POST("/users/:id/picture", uploadProfilePictureHandler.UploadProfilePicture)
 	protected.POST("/posts", postHandler.CreatePost)
 	protected.PUT("/posts/:id", postHandler.UpdatePost)
 	protected.POST("/posts/:id/comments", commentHandler.CreateComment)
@@ -111,6 +116,7 @@ func (s *E2ESuite) setupServer() {
 	protected.POST("/comunidades", communityHandler.CreateCommunity)
 	protected.POST("/products", productHandler.CreateProduct)
 	protected.PUT("/products/:id", productHandler.UpdateProduct)
+	protected.DELETE("/products/:id", productHandler.DeleteProduct)
 
 	e.GET("/posts/:id/comments", commentHandler.ListComments)
 

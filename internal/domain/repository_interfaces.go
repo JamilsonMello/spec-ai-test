@@ -76,4 +76,5 @@ type ProductRepository interface {
 	SaveProduct(product *Product) error
 	GetProductByID(id string) (*Product, error)
 	UpdateProduct(product *Product) error
+	DeleteProduct(id string, sellerID string) error
 }
